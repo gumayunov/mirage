@@ -29,17 +29,19 @@ class DocumentResponse(BaseModel):
     indexed_at: datetime | None = None
     chunks_total: int | None = None
     chunks_processed: int | None = None
+    chunks_by_status: dict[str, int] | None = None
 
 
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1)
     limit: int = Field(default=10, ge=1, le=100)
-    threshold: float = Field(default=0.7, ge=0.0, le=1.0)
+    threshold: float = Field(default=0.6, ge=0.0, le=1.0)
 
 
 class ChunkResult(BaseModel):
     chunk_id: str
     content: str
+    parent_content: str | None = None
     score: float
     structure: dict | None = None
     document: dict
