@@ -60,7 +60,7 @@ services:
     volumes:
       - ./src:/app/src:ro
       - mirage-documents:/data/documents
-    command: uv run python -m mirage.indexer.worker
+    command: uv run python -m mirage.indexer
     depends_on:
       db:
         condition: service_healthy
