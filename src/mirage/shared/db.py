@@ -49,6 +49,7 @@ class ChunkTable(Base):
     position: Mapped[int] = mapped_column(Integer)
     structure_json: Mapped[str | None] = mapped_column("structure", JSON, nullable=True)
     metadata_json: Mapped[str | None] = mapped_column("metadata", JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="pending")
 
     document: Mapped["DocumentTable"] = relationship(back_populates="chunks")
 
