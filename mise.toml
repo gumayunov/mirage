@@ -1,0 +1,7 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[env]
+VIRTUAL_ENV = ".venv"
+UV_LINK_MODE = "copy"
