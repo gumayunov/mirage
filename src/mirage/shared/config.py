@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     api_key: str
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "mxbai-embed-large"
-    chunk_size: int = 800
+    chunk_size: int = 400
     chunk_overlap: int = 100
     documents_path: str = "/data/documents"
 

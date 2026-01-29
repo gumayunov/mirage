@@ -22,5 +22,5 @@ def test_settings_defaults(monkeypatch):
 
     assert settings.ollama_url == "http://ollama:11434"
     assert settings.ollama_model == "mxbai-embed-large"
-    assert settings.chunk_size == 800
+    assert settings.chunk_size == 400
     assert settings.chunk_overlap == 100

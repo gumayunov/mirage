@@ -38,6 +38,21 @@ Third paragraph with even more content."""
         assert chunk.content.strip()
 
 
+def test_chunker_splits_long_sentence_by_words():
+    chunker = Chunker(chunk_size=20, overlap=5)
+    # A single long sentence with no period-space breaks
+    text = "word " * 100
+
+    chunks = chunker.chunk_text(text, structure={"chapter": "Test"})
+
+    assert len(chunks) > 1
+    for chunk in chunks:
+        tokens = chunker._count_tokens(chunk.content)
+        assert tokens <= chunker.chunk_size, (
+            f"Chunk has {tokens} tokens, exceeds limit {chunker.chunk_size}"
+        )
+
+
 def test_chunk_positions_are_sequential():
     chunker = Chunker(chunk_size=50, overlap=10)
     text = "Word " * 100

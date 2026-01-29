@@ -24,6 +24,27 @@ class Chunker:
         paragraphs = text.split("\n\n")
         return [p.strip() for p in paragraphs if p.strip()]
 
+    def _split_long_text_by_words(self, text: str) -> list[str]:
+        """Split text that exceeds chunk_size into word-boundary pieces."""
+        words = text.split()
+        pieces: list[str] = []
+        current_words: list[str] = []
+        current_tokens = 0
+
+        for word in words:
+            word_tokens = self._count_tokens(word)
+            if current_tokens + word_tokens > self.chunk_size and current_words:
+                pieces.append(" ".join(current_words))
+                current_words = []
+                current_tokens = 0
+            current_words.append(word)
+            current_tokens += word_tokens
+
+        if current_words:
+            pieces.append(" ".join(current_words))
+
+        return pieces
+
     def chunk_text(self, text: str, structure: dict[str, Any]) -> list[Chunk]:
         if not text.strip():
             return []
@@ -58,6 +79,28 @@ class Chunker:
                 sentences = para.replace(". ", ".|").split("|")
                 for sentence in sentences:
                     sent_tokens = self._count_tokens(sentence)
+
+                    # If a single sentence exceeds chunk_size, split by words
+                    if sent_tokens > self.chunk_size:
+                        if current_content:
+                            chunks.append(Chunk(
+                                content=" ".join(current_content),
+                                position=position,
+                                structure=structure,
+                            ))
+                            position += 1
+                            current_content = []
+                            current_tokens = 0
+
+                        for piece in self._split_long_text_by_words(sentence):
+                            chunks.append(Chunk(
+                                content=piece,
+                                position=position,
+                                structure=structure,
+                            ))
+                            position += 1
+                        continue
+
                     if current_tokens + sent_tokens > self.chunk_size and current_content:
                         chunks.append(Chunk(
                             content=" ".join(current_content),
