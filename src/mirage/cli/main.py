@@ -4,6 +4,7 @@ import typer
 
 from mirage import __version__
 from mirage.cli.commands import documents
+from mirage.cli.commands.search import search as search_cmd
 
 app = typer.Typer(
     name="mirage",
@@ -11,6 +12,7 @@ app = typer.Typer(
 )
 
 app.add_typer(documents.app, name="documents")
+app.command("search")(search_cmd)
 
 
 def version_callback(value: bool):
