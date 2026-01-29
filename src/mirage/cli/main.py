@@ -1,0 +1,29 @@
+from typing import Optional
+
+import typer
+
+from mirage import __version__
+
+app = typer.Typer(
+    name="mirage",
+    help="miRAGe - Local RAG system for books and documentation",
+)
+
+
+def version_callback(value: bool):
+    if value:
+        print(f"miRAGe version {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: Optional[bool] = typer.Option(
+        None, "--version", "-v", callback=version_callback, is_eager=True
+    ),
+):
+    pass
+
+
+if __name__ == "__main__":
+    app()
