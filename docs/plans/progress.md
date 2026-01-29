@@ -25,10 +25,20 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [ ] Task 5.1: CLI entry point
 - [ ] Task 5.2: Document commands
 - [ ] Task 5.3: Search command
-- [ ] Task 5.4: Status command
+- [ ] Task 8.1: Claude Code skill
 
 ## Phase 5: Infrastructure
-- [ ] Not started
+- [ ] Task 7.1: Dockerfile
+- [ ] Task 7.2: Indexer entrypoint
+- [ ] Task 7.3: Database migrations (Alembic)
+- [ ] Task 6.1: Helm chart base
+- [ ] Task 6.2: PostgreSQL templates
+- [ ] Task 6.3: Ollama templates
+- [ ] Task 6.4: API and Indexer templates
+- [ ] Task 6.5: Ingress template
+- [ ] Task 9.1: Database schema init script
+- [ ] Task 9.2: Run all tests and linters
+- [ ] Task 9.3: Update README
 
 ---
 

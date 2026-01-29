@@ -1055,6 +1055,208 @@ git commit -m "feat: add Ingress Helm template"
 
 ---
 
+## Task 9.1: Database Schema Init Script
+
+**Files:**
+- Create: `scripts/init-db.sql`
+
+**Step 1: Create init script**
+
+`scripts/init-db.sql`:
+```sql
+-- Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Projects table
+CREATE TABLE IF NOT EXISTS projects (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Documents table
+CREATE TABLE IF NOT EXISTS documents (
+    id VARCHAR(36) PRIMARY KEY,
+    project_id VARCHAR(36) REFERENCES projects(id) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    original_path VARCHAR(512) NOT NULL,
+    file_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    error_message TEXT,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    indexed_at TIMESTAMP,
+    UNIQUE(project_id, filename)
+);
+
+-- Chunks table with vector embedding
+CREATE TABLE IF NOT EXISTS chunks (
+    id VARCHAR(36) PRIMARY KEY,
+    document_id VARCHAR(36) REFERENCES documents(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    embedding vector(1024),
+    position INTEGER NOT NULL,
+    structure JSONB,
+    metadata JSONB
+);
+
+-- Indexing tasks table
+CREATE TABLE IF NOT EXISTS indexing_tasks (
+    id VARCHAR(36) PRIMARY KEY,
+    document_id VARCHAR(36) REFERENCES documents(id) ON DELETE CASCADE,
+    task_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_documents_project ON documents(project_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_document ON chunks(document_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON indexing_tasks(status);
+
+-- Vector index (HNSW for better performance)
+CREATE INDEX IF NOT EXISTS idx_chunks_embedding ON chunks
+USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+```
+
+**Step 2: Commit**
+
+```bash
+git add .
+git commit -m "feat: add database init script"
+```
+
+---
+
+## Task 9.2: Run All Tests
+
+**Step 1: Run full test suite**
+
+```bash
+uv run pytest tests/ -v --cov=src/mirage --cov-report=term-missing
+```
+
+Expected: All tests PASS
+
+**Step 2: Run linters**
+
+```bash
+uv run ruff check src/ tests/
+uv run mypy src/
+```
+
+Fix any issues found.
+
+**Step 3: Commit fixes if any**
+
+```bash
+git add .
+git commit -m "fix: address linter issues"
+```
+
+---
+
+## Task 9.3: Update README
+
+**Files:**
+- Modify: `README.md`
+
+**Step 1: Update README with full documentation**
+
+```markdown
+# miRAGe
+
+Local RAG system for books and documentation, designed for integration with Claude Code.
+
+## Features
+
+- Document isolation by project
+- Multi-hop retrieval on agent side
+- Semantic chunks preserving document structure
+- PDF, EPUB, Markdown support
+- Deployment to k3s cluster
+
+## Quick Start
+
+### Development
+
+```bash
+# Install tools
+mise install
+
+# Install dependencies
+uv sync
+
+# Run tests
+uv run pytest tests/ -v
+
+# Run API locally
+uv run uvicorn mirage.api.main:app --reload
+
+# Run indexer locally
+uv run python -m mirage.indexer
+```
+
+### Deployment
+
+```bash
+# Build image
+docker build -t mirage:latest .
+
+# Deploy to k3s
+helm install mirage ./helm/mirage \
+  --namespace mirage \
+  --create-namespace \
+  --set postgresql.auth.password=<password> \
+  --set auth.apiKey=<api-key>
+
+# Load Ollama model
+kubectl exec -n mirage deploy/mirage-ollama -- ollama pull mxbai-embed-large
+```
+
+## CLI Usage
+
+```bash
+export MIRAGE_API_URL=http://mirage.your-domain.ru/api/v1
+export MIRAGE_API_KEY=<your-api-key>
+
+# List documents
+mirage documents list --project my-project
+
+# Add document
+mirage documents add --project my-project /path/to/book.pdf
+
+# Search
+mirage search --project my-project "dependency injection patterns"
+```
+
+## Claude Code Integration
+
+1. Install the skill to `~/.claude/skills/mirage.md`
+2. Create `.mirage.yaml` in your project root with `project_id`
+3. Set `MIRAGE_API_KEY` and `MIRAGE_API_URL` environment variables
+
+## Architecture
+
+See `docs/design.md` for detailed architecture documentation.
+
+## License
+
+MIT
+```
+
+**Step 2: Commit**
+
+```bash
+git add .
+git commit -m "docs: update README with full documentation"
+```
+
+---
+
 ## Verification
 
 После завершения всех задач:
