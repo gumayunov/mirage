@@ -32,9 +32,9 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task CSL-6: StatusWorker (document status from chunk counts)
 
 ## Phase 3.5.3: Chunk Status — Visibility
-- [ ] Task CSL-7: API — chunk progress in DocumentResponse
-- [ ] Task CSL-8: CLI — chunk progress in `status` and `list`
-- [ ] Task CSL-9: Full test suite regression fix
+- [x] Task CSL-7: API — chunk progress in DocumentResponse
+- [x] Task CSL-8: CLI — chunk progress in `status` and `list`
+- [x] Task CSL-9: Full test suite regression fix
 
 ## Phase 4: CLI Integration
 - [x] Task 5.1: CLI entry point
