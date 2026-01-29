@@ -29,10 +29,17 @@ def list_documents(
         typer.echo("No documents found.")
         return
 
-    typer.echo(f"{'ID':<40} {'Filename':<30} {'Status':<10}")
-    typer.echo("-" * 80)
+    typer.echo(f"{'ID':<40} {'Filename':<30} {'Status':<10} {'Progress':<15}")
+    typer.echo("-" * 95)
     for doc in docs:
-        typer.echo(f"{doc['id']:<40} {doc['filename']:<30} {doc['status']:<10}")
+        total = doc.get("chunks_total")
+        processed = doc.get("chunks_processed", 0)
+        if total:
+            pct = round(processed / total * 100) if total > 0 else 0
+            progress = f"{processed}/{total} ({pct}%)"
+        else:
+            progress = ""
+        typer.echo(f"{doc['id']:<40} {doc['filename']:<30} {doc['status']:<10} {progress:<15}")
 
 
 @app.command("add")
@@ -100,5 +107,10 @@ def document_status(
     typer.echo(f"Filename: {doc['filename']}")
     typer.echo(f"Type:     {doc['file_type']}")
     typer.echo(f"Status:   {doc['status']}")
+    if doc.get("chunks_total"):
+        total = doc["chunks_total"]
+        processed = doc.get("chunks_processed", 0)
+        pct = round(processed / total * 100) if total > 0 else 0
+        typer.echo(f"Chunks:   {processed}/{total} ({pct}%)")
     if doc.get("error_message"):
         typer.echo(f"Error:    {doc['error_message']}")
