@@ -180,3 +180,13 @@ class IndexerWorker:
                     await self.process_task(session, task)
                 else:
                     await asyncio.sleep(5)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+    settings = Settings()
+    worker = IndexerWorker(settings)
+    asyncio.run(worker.run())

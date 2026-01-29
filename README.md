@@ -55,6 +55,38 @@ curl http://localhost:11434/api/embeddings -d '{
 curl http://localhost:8000/health
 ```
 
+### Verify Indexing
+
+Run in separate terminals: `make api` and `make indexer`.
+
+```bash
+# 1. Create a project
+curl -X POST http://localhost:8000/api/v1/projects \
+  -H "X-API-Key: dev-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "test-project"}'
+# Save the project ID from response
+
+# 2. Create a test markdown file
+echo -e "# Test Book\n\n## Chapter 1\n\nThis is test content about machine learning." > /tmp/test.md
+
+# 3. Upload document
+curl -X POST http://localhost:8000/api/v1/projects/{project_id}/documents \
+  -H "X-API-Key: dev-api-key" \
+  -F "file=@/tmp/test.md"
+# Save the document ID from response
+
+# 4. Check document status (should change from "pending" to "ready")
+curl http://localhost:8000/api/v1/projects/{project_id}/documents/{document_id} \
+  -H "X-API-Key: dev-api-key"
+
+# 5. Search for content
+curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
+  -H "X-API-Key: dev-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "machine learning", "limit": 5}'
+```
+
 ## API Usage
 
 All API endpoints require `X-API-Key` header (default: `dev-api-key`).
@@ -113,6 +145,7 @@ curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
 | `make dev-stop` | Stop containers |
 | `make dev-logs` | Show container logs |
 | `make api` | Run API server with hot reload |
+| `make indexer` | Run indexer worker |
 | `make test` | Run tests |
 | `make ollama-pull` | Download embedding model |
 | `make db-shell` | Open PostgreSQL shell |

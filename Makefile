@@ -1,4 +1,4 @@
-.PHONY: help setup dev dev-stop dev-logs api test clean ollama-pull db-shell
+.PHONY: help setup dev dev-stop dev-logs api indexer test clean ollama-pull db-shell
 
 # Default target
 help:
@@ -9,6 +9,7 @@ help:
 	@echo "  make dev-stop     - Stop all services"
 	@echo "  make dev-logs     - Show service logs"
 	@echo "  make api          - Run API server (requires 'make dev' first)"
+	@echo "  make indexer      - Run indexer worker (requires 'make dev' first)"
 	@echo "  make test         - Run tests"
 	@echo "  make ollama-pull  - Download embedding model"
 	@echo "  make db-shell     - Open PostgreSQL shell"
@@ -39,6 +40,13 @@ api:
 	MIRAGE_API_KEY="dev-api-key" \
 	MIRAGE_OLLAMA_URL="http://localhost:11434" \
 	uv run uvicorn mirage.api.main:app --reload --host 0.0.0.0 --port 8000
+
+# Run indexer worker
+indexer:
+	MIRAGE_DATABASE_URL="postgresql+asyncpg://mirage:mirage@localhost:5433/mirage" \
+	MIRAGE_API_KEY="dev-api-key" \
+	MIRAGE_OLLAMA_URL="http://localhost:11434" \
+	uv run python -m mirage.indexer.worker
 
 # Run tests
 test:
