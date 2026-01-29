@@ -3,7 +3,7 @@ from typing import Optional
 import typer
 
 from mirage import __version__
-from mirage.cli.commands import documents
+from mirage.cli.commands import documents, projects
 from mirage.cli.commands.search import search as search_cmd
 
 app = typer.Typer(
@@ -11,6 +11,7 @@ app = typer.Typer(
     help="miRAGe - Local RAG system for books and documentation",
 )
 
+app.add_typer(projects.app, name="projects")
 app.add_typer(documents.app, name="documents")
 app.command("search")(search_cmd)
 
