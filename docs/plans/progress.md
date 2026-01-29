@@ -40,7 +40,7 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task 5.1: CLI entry point
 - [x] Task 5.2: Document commands
 - [x] Task 5.3: Search command
-- [ ] Task 8.1: Claude Code skill
+- [x] Task 8.1: Claude Code skill
 
 ## Phase 5: Infrastructure
 - [x] Task 7.1: Dockerfile
