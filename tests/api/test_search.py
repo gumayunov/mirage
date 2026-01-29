@@ -42,7 +42,7 @@ async def test_db():
             id="test-chunk-id",
             document_id="test-doc-id",
             content="This is test content about Python programming.",
-            embedding=[0.1] * 1024,
+            embedding=[0.1] * 768,
             position=0,
             structure_json={"chapter": "Introduction"},
         )
@@ -70,7 +70,7 @@ def override_settings():
 @pytest.fixture
 def mock_embedding():
     mock = AsyncMock()
-    mock.get_embedding = AsyncMock(return_value=EmbeddingResult(embedding=[0.1] * 1024, truncated=False))
+    mock.get_embedding = AsyncMock(return_value=EmbeddingResult(embedding=[0.1] * 768, truncated=False))
     app.dependency_overrides[get_embedding_client] = lambda: mock
     yield mock
     app.dependency_overrides.clear()
@@ -89,3 +89,80 @@ async def test_search(test_db, override_settings, mock_embedding):
     assert response.status_code == 200
     data = response.json()
     assert len(data) >= 0  # SQLite doesn't support vector search, just test API works
+
+
+@pytest.fixture
+async def test_db_with_parent_child():
+    """DB fixture with parent+child chunk structure."""
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+
+    async def override_get_db():
+        async with async_session() as session:
+            yield session
+
+    app.dependency_overrides[get_db_session] = override_get_db
+
+    async with async_session() as session:
+        project = ProjectTable(id="test-project-id", name="test-project")
+        session.add(project)
+
+        doc = DocumentTable(
+            id="test-doc-id",
+            project_id="test-project-id",
+            filename="test.md",
+            original_path="/tmp/test.md",
+            file_type="markdown",
+            status="ready",
+        )
+        session.add(doc)
+
+        parent = ChunkTable(
+            id="parent-chunk-id",
+            document_id="test-doc-id",
+            content="Full context paragraph about Python and its ecosystem.",
+            position=0,
+            status="parent",
+            structure_json={"chapter": "Introduction"},
+        )
+        session.add(parent)
+        await session.flush()
+
+        child = ChunkTable(
+            id="child-chunk-id",
+            document_id="test-doc-id",
+            content="Python programming language.",
+            embedding=[0.1] * 768,
+            position=0,
+            status="ready",
+            structure_json={"chapter": "Introduction"},
+            parent_id="parent-chunk-id",
+        )
+        session.add(child)
+        await session.commit()
+
+    yield engine
+
+    app.dependency_overrides.clear()
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_search_returns_parent_content(test_db_with_parent_child, override_settings, mock_embedding):
+    """Search results include parent_content from the parent chunk."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/projects/test-project-id/search",
+            json={"query": "Python", "limit": 10},
+            headers={"X-API-Key": "test-key"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "results" in data
+    for result in data["results"]:
+        assert "parent_content" in result

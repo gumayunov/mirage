@@ -41,14 +41,20 @@ async def search(
     # For PostgreSQL with pgvector, use vector similarity search
     # For SQLite (testing), fall back to returning all chunks
     try:
-        # Try pgvector query
+        # Try pgvector query — search child chunks, JOIN parent for context
         sql = text("""
-            SELECT c.id, c.content, c.structure, c.embedding <=> :embedding AS distance,
+            SELECT DISTINCT ON (child.parent_id)
+                   child.id, child.content, child.structure,
+                   child.embedding <=> :embedding AS distance,
+                   parent.content AS parent_content,
                    d.id as doc_id, d.filename
-            FROM chunks c
-            JOIN documents d ON c.document_id = d.id
-            WHERE d.project_id = :project_id AND d.status = 'ready'
-            ORDER BY c.embedding <=> :embedding
+            FROM chunks child
+            JOIN chunks parent ON child.parent_id = parent.id
+            JOIN documents d ON child.document_id = d.id
+            WHERE d.project_id = :project_id
+              AND d.status = 'ready'
+              AND child.parent_id IS NOT NULL
+            ORDER BY child.parent_id, child.embedding <=> :embedding
             LIMIT :limit
         """)
         result = await db.execute(
@@ -72,6 +78,7 @@ async def search(
                     ChunkResult(
                         chunk_id=row.id,
                         content=row.content,
+                        parent_content=row.parent_content,
                         score=score,
                         structure=row.structure,
                         document={"id": row.doc_id, "filename": row.filename},
@@ -85,25 +92,39 @@ async def search(
 
     except Exception:
         logger.exception("pgvector query failed, falling back to SQLite")
-        # Fallback for SQLite (no vector search)
+        # Fallback for SQLite (no vector search) — filter child chunks only
         result = await db.execute(
             select(ChunkTable, DocumentTable)
             .join(DocumentTable)
             .where(
                 DocumentTable.project_id == project_id,
                 DocumentTable.status == "ready",
+                ChunkTable.parent_id.is_not(None),
             )
             .limit(request.limit)
         )
         rows = result.all()
         logger.info("Fallback returned %d rows", len(rows))
 
+        # Deduplicate by parent_id: keep first per parent
+        seen_parents: set[str] = set()
         results = []
         for chunk, doc in rows:
+            if chunk.parent_id in seen_parents:
+                continue
+            seen_parents.add(chunk.parent_id)
+
+            # Load parent content
+            parent_result = await db.execute(
+                select(ChunkTable.content).where(ChunkTable.id == chunk.parent_id)
+            )
+            parent_content = parent_result.scalar_one_or_none()
+
             results.append(
                 ChunkResult(
                     chunk_id=chunk.id,
                     content=chunk.content,
+                    parent_content=parent_content,
                     score=1.0,  # No real scoring in fallback
                     structure=chunk.structure_json,
                     document={"id": doc.id, "filename": doc.filename},
