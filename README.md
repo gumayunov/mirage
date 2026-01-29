@@ -22,7 +22,7 @@ Local RAG system for books and documentation. Supports PDF, EPUB, and Markdown f
 
 ```bash
 # Install dependencies
-uv sync
+make setup
 
 # Start PostgreSQL and Ollama
 make dev
@@ -108,6 +108,7 @@ curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
 
 | Command | Description |
 |---------|-------------|
+| `make setup` | Install Python dependencies |
 | `make dev` | Start PostgreSQL + Ollama containers |
 | `make dev-stop` | Stop containers |
 | `make dev-logs` | Show container logs |
@@ -162,7 +163,7 @@ miRAGe
 
 - [x] Phase 1: Foundation (config, db, embedding client)
 - [x] Phase 2: API (projects, documents, search endpoints)
-- [ ] Phase 3: Indexer (document parsing, chunking, embedding)
+- [x] Phase 3: Indexer (document parsing, chunking, embedding)
 - [ ] Phase 4: CLI integration
 - [ ] Phase 5: Infrastructure (Docker, Helm, migrations)
 

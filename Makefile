@@ -1,9 +1,10 @@
-.PHONY: help dev dev-stop dev-logs api test clean ollama-pull db-shell
+.PHONY: help setup dev dev-stop dev-logs api test clean ollama-pull db-shell
 
 # Default target
 help:
 	@echo "miRAGe Development Commands"
 	@echo ""
+	@echo "  make setup        - Install Python dependencies"
 	@echo "  make dev          - Start all services (PostgreSQL + Ollama)"
 	@echo "  make dev-stop     - Stop all services"
 	@echo "  make dev-logs     - Show service logs"
@@ -12,6 +13,10 @@ help:
 	@echo "  make ollama-pull  - Download embedding model"
 	@echo "  make db-shell     - Open PostgreSQL shell"
 	@echo "  make clean        - Stop services and remove volumes"
+
+# Install dependencies
+setup:
+	uv sync --all-extras
 
 # Start development services
 dev:
