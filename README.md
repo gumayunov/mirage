@@ -14,27 +14,21 @@ Local RAG system for books and documentation. Supports PDF, EPUB, and Markdown f
 ### Prerequisites
 
 - Docker and Docker Compose
-- Python 3.12+
-- [uv](https://github.com/astral-sh/uv) package manager
-- [mise](https://mise.jdx.dev/) (optional, for version management)
+- [uv](https://github.com/astral-sh/uv) (optional, for running tests locally)
 
 ### Setup
 
 ```bash
-# Install dependencies
-make setup
-
-# Start PostgreSQL and Ollama
+# Start all services (DB, Ollama, API, Indexer)
 make dev
 
 # Download embedding model (first time only, ~670MB)
 make ollama-pull
-
-# Run API server
-make api
 ```
 
 API will be available at http://localhost:8000
+
+Live reload is enabled — edit `src/` and changes apply automatically.
 
 ### Verify Setup
 
@@ -56,8 +50,6 @@ curl http://localhost:8000/health
 ```
 
 ### Verify Indexing
-
-Run in separate terminals: `make api` and `make indexer`.
 
 ```bash
 # 1. Create a project
@@ -140,26 +132,19 @@ curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
 
 | Command | Description |
 |---------|-------------|
-| `make setup` | Install Python dependencies |
-| `make dev` | Start PostgreSQL + Ollama containers |
-| `make dev-stop` | Stop containers |
-| `make dev-logs` | Show container logs |
-| `make api` | Run API server with hot reload |
-| `make indexer` | Run indexer worker |
-| `make test` | Run tests |
+| `make dev` | Start all services (DB, Ollama, API, Indexer) |
+| `make dev-stop` | Stop all services |
+| `make dev-logs` | Show service logs |
+| `make dev-build` | Rebuild Docker images |
+| `make test` | Run tests locally |
+| `make setup` | Install Python dependencies (for local testing) |
 | `make ollama-pull` | Download embedding model |
 | `make db-shell` | Open PostgreSQL shell |
-| `make clean` | Stop containers and delete volumes |
-
-**Why `make dev` and `make api` are separate?**
-
-- `make dev` starts infrastructure (PostgreSQL, Ollama) in Docker containers running in background
-- `make api` runs the API server locally with hot reload — code changes apply instantly without restart
-- This separation enables faster development cycle and easier debugging (logs in terminal, debugger support)
+| `make clean` | Stop services and remove volumes |
 
 ## Configuration
 
-Environment variables (set automatically by `make api`):
+Environment variables (set in docker-compose.yml):
 
 | Variable | Default | Description |
 |----------|---------|-------------|

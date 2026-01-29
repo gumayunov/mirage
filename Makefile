@@ -1,30 +1,34 @@
-.PHONY: help setup dev dev-stop dev-logs api indexer test clean ollama-pull db-shell
+.PHONY: help setup dev dev-stop dev-logs dev-build test clean ollama-pull db-shell
 
 # Default target
 help:
 	@echo "miRAGe Development Commands"
 	@echo ""
-	@echo "  make setup        - Install Python dependencies"
-	@echo "  make dev          - Start all services (PostgreSQL + Ollama)"
+	@echo "  make setup        - Install Python dependencies (for local testing)"
+	@echo "  make dev          - Start all services (DB, Ollama, API, Indexer)"
 	@echo "  make dev-stop     - Stop all services"
 	@echo "  make dev-logs     - Show service logs"
-	@echo "  make api          - Run API server (requires 'make dev' first)"
-	@echo "  make indexer      - Run indexer worker (requires 'make dev' first)"
+	@echo "  make dev-build    - Rebuild Docker images"
 	@echo "  make test         - Run tests"
 	@echo "  make ollama-pull  - Download embedding model"
 	@echo "  make db-shell     - Open PostgreSQL shell"
 	@echo "  make clean        - Stop services and remove volumes"
 
-# Install dependencies
+# Install dependencies (for local testing)
 setup:
 	uv sync --all-extras
 
-# Start development services
+# Start all development services
 dev:
-	docker compose up -d
+	docker compose up -d --build
 	@echo ""
-	@echo "Services started. Run 'make ollama-pull' to download the embedding model."
-	@echo "Then run 'make api' to start the API server."
+	@echo "Services starting..."
+	@echo "  - API:     http://localhost:8000"
+	@echo "  - Ollama:  http://localhost:11434"
+	@echo "  - DB:      localhost:5433"
+	@echo ""
+	@echo "Run 'make ollama-pull' to download the embedding model (first time only)."
+	@echo "Run 'make dev-logs' to see logs."
 
 # Stop development services
 dev-stop:
@@ -34,19 +38,9 @@ dev-stop:
 dev-logs:
 	docker compose logs -f
 
-# Run API server
-api:
-	MIRAGE_DATABASE_URL="postgresql+asyncpg://mirage:mirage@localhost:5433/mirage" \
-	MIRAGE_API_KEY="dev-api-key" \
-	MIRAGE_OLLAMA_URL="http://localhost:11434" \
-	uv run uvicorn mirage.api.main:app --reload --host 0.0.0.0 --port 8000
-
-# Run indexer worker
-indexer:
-	MIRAGE_DATABASE_URL="postgresql+asyncpg://mirage:mirage@localhost:5433/mirage" \
-	MIRAGE_API_KEY="dev-api-key" \
-	MIRAGE_OLLAMA_URL="http://localhost:11434" \
-	uv run python -m mirage.indexer.worker
+# Rebuild images
+dev-build:
+	docker compose build
 
 # Run tests
 test:
