@@ -19,7 +19,7 @@ class StatusWorker:
 
     async def check_documents(self, session: AsyncSession) -> None:
         result = await session.execute(
-            select(DocumentTable).where(DocumentTable.status == "indexing")
+            select(DocumentTable).where(DocumentTable.status.in_(["indexing", "partial"]))
         )
         docs = result.scalars().all()
 
@@ -29,7 +29,10 @@ class StatusWorker:
                     ChunkTable.status,
                     func.count().label("cnt"),
                 )
-                .where(ChunkTable.document_id == doc.id)
+                .where(
+                    ChunkTable.document_id == doc.id,
+                    ChunkTable.parent_id.is_not(None),
+                )
                 .group_by(ChunkTable.status)
             )
             status_counts = {row[0]: row[1] for row in counts.fetchall()}

@@ -5,10 +5,9 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-# mxbai-embed-large has a 512-token context window.
-# Empirically, 729 chars already exceeds the limit while 694 passes.
-# Use 500 chars as a safe ceiling (~1 char per token for worst case).
-MAX_PROMPT_CHARS = 500
+# nomic-embed-text has an 8192-token context window.
+# At ~4 chars/token for English, 8000 chars is a safe ceiling.
+MAX_PROMPT_CHARS = 8000
 
 
 @dataclass

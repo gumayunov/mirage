@@ -41,12 +41,21 @@ async def db_session():
             status="indexing",
         )
         session.add(doc)
+        parent = ChunkTable(
+            id="parent-1",
+            document_id="doc-1",
+            content="Parent context",
+            position=0,
+            status="parent",
+        )
+        session.add(parent)
         chunk = ChunkTable(
             id="chunk-1",
             document_id="doc-1",
             content="Some test content",
             position=0,
             status="pending",
+            parent_id="parent-1",
         )
         session.add(chunk)
         await session.commit()
@@ -60,7 +69,7 @@ async def db_session():
 async def test_embedding_worker_processes_chunk_ready(settings, db_session):
     mock_client = AsyncMock()
     mock_client.get_embedding = AsyncMock(
-        return_value=EmbeddingResult(embedding=[0.1] * 1024, truncated=False)
+        return_value=EmbeddingResult(embedding=[0.1] * 768, truncated=False)
     )
 
     worker = EmbeddingWorker(settings)
@@ -76,14 +85,14 @@ async def test_embedding_worker_processes_chunk_ready(settings, db_session):
             select(ChunkTable).where(ChunkTable.id == "chunk-1")
         )).scalar_one()
         assert chunk.status == "ready"
-        assert list(chunk.embedding) == [0.1] * 1024
+        assert list(chunk.embedding) == [0.1] * 768
 
 
 @pytest.mark.asyncio
 async def test_embedding_worker_truncated_chunk(settings, db_session):
     mock_client = AsyncMock()
     mock_client.get_embedding = AsyncMock(
-        return_value=EmbeddingResult(embedding=[0.2] * 1024, truncated=True)
+        return_value=EmbeddingResult(embedding=[0.2] * 768, truncated=True)
     )
 
     worker = EmbeddingWorker(settings)

@@ -7,16 +7,16 @@ from mirage.indexer.worker import ChunkWorker
 from mirage.shared.config import Settings
 from mirage.shared.db import create_tables, get_engine
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-
 logger = logging.getLogger(__name__)
 
 
 async def main():
     settings = Settings()
+
+    logging.basicConfig(
+        level=settings.log_level.upper(),
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
 
     # Create tables if needed
     engine = get_engine(settings.database_url)

@@ -47,12 +47,22 @@ async def _create_doc_with_chunks(session_factory, doc_id, chunk_statuses):
             status="indexing",
         )
         session.add(doc)
+        parent_id = f"parent-{doc_id}"
+        parent = ChunkTable(
+            id=parent_id,
+            document_id=doc_id,
+            content="Parent chunk",
+            position=0,
+            status="parent",
+        )
+        session.add(parent)
         for i, status in enumerate(chunk_statuses):
             chunk = ChunkTable(
                 document_id=doc_id,
                 content=f"Chunk {i}",
                 position=i,
                 status=status,
+                parent_id=parent_id,
             )
             session.add(chunk)
         await session.commit()
@@ -129,4 +139,49 @@ async def test_status_worker_ignores_non_indexing_docs(settings, db_session):
         doc = (await session.execute(
             select(DocumentTable).where(DocumentTable.id == "doc-4")
         )).scalar_one()
+        assert doc.status == "ready"
+
+
+@pytest.mark.asyncio
+async def test_status_worker_ignores_parent_chunks(settings, db_session):
+    """StatusWorker should only consider child chunks for document readiness."""
+    async with db_session() as session:
+        doc = DocumentTable(
+            id="doc-5",
+            project_id="proj-1",
+            filename="parent-child.md",
+            original_path="/tmp/parent-child.md",
+            file_type="markdown",
+            status="indexing",
+        )
+        session.add(doc)
+
+        # Parent chunk with status="parent" — should not prevent "ready"
+        parent = ChunkTable(
+            id="parent-1",
+            document_id="doc-5",
+            content="Parent",
+            position=0,
+            status="parent",
+        )
+        session.add(parent)
+
+        # All children are ready
+        for i in range(2):
+            child = ChunkTable(
+                document_id="doc-5",
+                content=f"Child {i}",
+                position=i,
+                status="ready",
+                parent_id="parent-1",
+            )
+            session.add(child)
+        await session.commit()
+
+    worker = StatusWorker(settings)
+    async with db_session() as session:
+        await worker.check_documents(session)
+
+    async with db_session() as session:
+        doc = (await session.execute(select(DocumentTable).where(DocumentTable.id == "doc-5"))).scalar_one()
         assert doc.status == "ready"

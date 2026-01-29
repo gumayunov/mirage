@@ -127,12 +127,21 @@ async def test_document_status_includes_chunk_counts(test_db, override_settings)
             status="indexing",
         )
         session.add(doc)
+        parent = ChunkTable(
+            id="parent-for-doc-with-chunks",
+            document_id="doc-with-chunks",
+            content="Parent",
+            position=0,
+            status="parent",
+        )
+        session.add(parent)
         for i, status in enumerate(["ready", "ready", "pending", "processing"]):
             chunk = ChunkTable(
                 document_id="doc-with-chunks",
                 content=f"Chunk {i}",
                 position=i,
                 status=status,
+                parent_id="parent-for-doc-with-chunks",
             )
             session.add(chunk)
         await session.commit()
@@ -148,3 +157,101 @@ async def test_document_status_includes_chunk_counts(test_db, override_settings)
     data = response.json()
     assert data["chunks_total"] == 4
     assert data["chunks_processed"] == 2  # only "ready" chunks are processed (not pending/processing)
+    assert data["chunks_by_status"] == {"ready": 2, "pending": 1, "processing": 1}
+
+
+@pytest.mark.asyncio
+async def test_list_documents_includes_chunks_by_status(test_db, override_settings):
+    engine = test_db
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+    async with async_session() as session:
+        doc = DocumentTable(
+            id="doc-list-chunks",
+            project_id="test-project-id",
+            filename="listed.md",
+            original_path="/tmp/listed.md",
+            file_type="markdown",
+            status="indexed",
+        )
+        session.add(doc)
+        parent = ChunkTable(
+            id="parent-for-list-chunks",
+            document_id="doc-list-chunks",
+            content="Parent",
+            position=0,
+            status="parent",
+        )
+        session.add(parent)
+        for i, chunk_status in enumerate(["ready", "ready", "ready", "error"]):
+            chunk = ChunkTable(
+                document_id="doc-list-chunks",
+                content=f"Chunk {i}",
+                position=i,
+                status=chunk_status,
+                parent_id="parent-for-list-chunks",
+            )
+            session.add(chunk)
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/projects/test-project-id/documents",
+            headers={"X-API-Key": "test-key"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    doc_data = next(d for d in data if d["id"] == "doc-list-chunks")
+    assert doc_data["chunks_by_status"] == {"ready": 3, "error": 1}
+
+
+@pytest.mark.asyncio
+async def test_document_chunk_counts_exclude_parents(test_db, override_settings):
+    """Chunk counts should only count child chunks, not parent chunks."""
+    engine = test_db
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+    async with async_session() as session:
+        doc = DocumentTable(
+            id="doc-parent-child",
+            project_id="test-project-id",
+            filename="pc.md",
+            original_path="/tmp/pc.md",
+            file_type="markdown",
+            status="indexing",
+        )
+        session.add(doc)
+
+        parent = ChunkTable(
+            id="p1",
+            document_id="doc-parent-child",
+            content="Parent content",
+            position=0,
+            status="parent",
+        )
+        session.add(parent)
+
+        for i, s in enumerate(["ready", "pending"]):
+            child = ChunkTable(
+                document_id="doc-parent-child",
+                content=f"Child {i}",
+                position=i,
+                status=s,
+                parent_id="p1",
+            )
+            session.add(child)
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/projects/test-project-id/documents/doc-parent-child",
+            headers={"X-API-Key": "test-key"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    # Should count only children (2), not the parent
+    assert data["chunks_total"] == 2
+    assert data["chunks_processed"] == 1
+    assert "parent" not in data["chunks_by_status"]

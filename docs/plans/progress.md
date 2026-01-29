@@ -36,6 +36,25 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task CSL-8: CLI — chunk progress in `status` and `list`
 - [x] Task CSL-9: Full test suite regression fix
 
+## Phase 3.6.1: Parent-Child Chunking — Config & Data Model
+- [x] Task 1: Add child chunk config fields
+- [x] Task 2: Add parent_id to ChunkTable
+
+## Phase 3.6.2: Parent-Child Chunking — Chunking Pipeline
+- [x] Task 3: Add chunk_children() method to Chunker
+
+## Phase 3.6.3: Parent-Child Chunking — Worker Pipeline
+- [x] Task 4: Update ChunkWorker for two-level chunking
+
+## Phase 3.6.4: Parent-Child Chunking — Search
+- [x] Task 5: Add parent_content to ChunkResult schema
+- [x] Task 6: Update search query with parent JOIN and deduplication
+
+## Phase 3.6.5: Parent-Child Chunking — Counts & Status
+- [x] Task 7: Filter parent chunks from document chunk counts
+- [x] Task 8: Update StatusWorker to count only child chunks
+- [x] Task 9: Update test fixtures with parent_id
+
 ## Phase 4: CLI Integration
 - [x] Task 5.1: CLI entry point
 - [x] Task 5.2: Document commands

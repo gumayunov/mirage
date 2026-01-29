@@ -50,12 +50,33 @@ async def list_documents(
                     ChunkTable.status.not_in(["pending", "processing"])
                 ).label("processed"),
             )
-            .where(ChunkTable.document_id.in_(doc_ids))
+            .where(
+                ChunkTable.document_id.in_(doc_ids),
+                ChunkTable.parent_id.is_not(None),
+            )
             .group_by(ChunkTable.document_id)
         )
         counts = {row[0]: (row[1], row[2]) for row in counts_result.fetchall()}
+
+        # Get per-status breakdown
+        status_result = await db.execute(
+            select(
+                ChunkTable.document_id,
+                ChunkTable.status,
+                func.count().label("cnt"),
+            )
+            .where(
+                ChunkTable.document_id.in_(doc_ids),
+                ChunkTable.parent_id.is_not(None),
+            )
+            .group_by(ChunkTable.document_id, ChunkTable.status)
+        )
+        status_counts: dict[str, dict[str, int]] = {}
+        for row in status_result.fetchall():
+            status_counts.setdefault(row[0], {})[row[1]] = row[2]
     else:
         counts = {}
+        status_counts = {}
 
     return [
         DocumentResponse(
@@ -70,6 +91,7 @@ async def list_documents(
             indexed_at=doc.indexed_at,
             chunks_total=counts.get(doc.id, (None, None))[0],
             chunks_processed=counts.get(doc.id, (None, None))[1],
+            chunks_by_status=status_counts.get(doc.id),
         )
         for doc in docs
     ]
@@ -155,7 +177,8 @@ async def get_document(
     # Count chunks
     total_result = await db.execute(
         select(func.count()).select_from(ChunkTable).where(
-            ChunkTable.document_id == document_id
+            ChunkTable.document_id == document_id,
+            ChunkTable.parent_id.is_not(None),
         )
     )
     total = total_result.scalar() or 0
@@ -163,10 +186,24 @@ async def get_document(
     processed_result = await db.execute(
         select(func.count()).select_from(ChunkTable).where(
             ChunkTable.document_id == document_id,
+            ChunkTable.parent_id.is_not(None),
             ChunkTable.status.not_in(["pending", "processing"]),
         )
     )
     processed = processed_result.scalar() or 0
+
+    # Per-status breakdown
+    chunks_by_status = None
+    if total > 0:
+        status_result = await db.execute(
+            select(ChunkTable.status, func.count().label("cnt"))
+            .where(
+                ChunkTable.document_id == document_id,
+                ChunkTable.parent_id.is_not(None),
+            )
+            .group_by(ChunkTable.status)
+        )
+        chunks_by_status = {row[0]: row[1] for row in status_result.fetchall()}
 
     return DocumentResponse(
         id=doc.id,
@@ -180,6 +217,7 @@ async def get_document(
         indexed_at=doc.indexed_at,
         chunks_total=total if total > 0 else None,
         chunks_processed=processed if total > 0 else None,
+        chunks_by_status=chunks_by_status,
     )
 
 

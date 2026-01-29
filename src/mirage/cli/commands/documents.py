@@ -112,5 +112,10 @@ def document_status(
         processed = doc.get("chunks_processed", 0)
         pct = round(processed / total * 100) if total > 0 else 0
         typer.echo(f"Chunks:   {processed}/{total} ({pct}%)")
+        if doc.get("chunks_by_status"):
+            breakdown = ", ".join(
+                f"{s}: {c}" for s, c in doc["chunks_by_status"].items()
+            )
+            typer.echo(f"          {breakdown}")
     if doc.get("error_message"):
         typer.echo(f"Error:    {doc['error_message']}")

@@ -39,6 +39,7 @@ services:
       MIRAGE_API_KEY: dev-api-key
       MIRAGE_OLLAMA_URL: http://ollama:11434
       MIRAGE_DOCUMENTS_PATH: /data/documents
+      MIRAGE_LOG_LEVEL: ${MIRAGE_LOG_LEVEL:-INFO}
     volumes:
       - ./src:/app/src:ro
       - mirage-documents:/data/documents
@@ -57,6 +58,7 @@ services:
       MIRAGE_API_KEY: dev-api-key
       MIRAGE_OLLAMA_URL: http://ollama:11434
       MIRAGE_DOCUMENTS_PATH: /data/documents
+      MIRAGE_LOG_LEVEL: ${MIRAGE_LOG_LEVEL:-INFO}
     volumes:
       - ./src:/app/src:ro
       - mirage-documents:/data/documents

@@ -48,7 +48,7 @@ test:
 
 # Download embedding model
 ollama-pull:
-	docker exec mirage-ollama ollama pull mxbai-embed-large
+	docker exec mirage-ollama ollama pull nomic-embed-text
 
 # Open PostgreSQL shell
 db-shell:
