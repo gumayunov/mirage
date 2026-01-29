@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Text, Integer, DateTime, ForeignKey, JSON
+from sqlalchemy import String, Text, Integer, DateTime, ForeignKey, JSON, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from pgvector.sqlalchemy import Vector
 
 
 class Base(DeclarativeBase):
@@ -45,7 +46,7 @@ class ChunkTable(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     document_id: Mapped[str] = mapped_column(String(36), ForeignKey("documents.id", ondelete="CASCADE"))
     content: Mapped[str] = mapped_column(Text)
-    embedding_json: Mapped[str | None] = mapped_column("embedding", JSON, nullable=True)
+    embedding = mapped_column(Vector(1024), nullable=True)
     position: Mapped[int] = mapped_column(Integer)
     structure_json: Mapped[str | None] = mapped_column("structure", JSON, nullable=True)
     metadata_json: Mapped[str | None] = mapped_column("metadata", JSON, nullable=True)
@@ -72,13 +73,22 @@ def get_engine(database_url: str) -> AsyncEngine:
     return create_async_engine(database_url, echo=False)
 
 
+async def _ensure_pgvector(engine: AsyncEngine) -> None:
+    if engine.dialect.name != "postgresql":
+        return
+    async with engine.begin() as conn:
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+
+
 async def create_tables(engine: AsyncEngine) -> None:
+    await _ensure_pgvector(engine)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
 async def recreate_tables(engine: AsyncEngine) -> None:
     """Drop all tables and recreate them. WARNING: Destroys all data!"""
+    await _ensure_pgvector(engine)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)

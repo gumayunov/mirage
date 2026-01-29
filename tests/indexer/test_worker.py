@@ -87,7 +87,7 @@ async def test_chunk_worker_creates_pending_chunks(settings, db_session, tmp_pat
         assert len(chunks) >= 1
         for chunk in chunks:
             assert chunk.status == "pending"
-            assert chunk.embedding_json is None
+            assert chunk.embedding is None
             assert chunk.content
 
         # Verify document status is now "indexing"

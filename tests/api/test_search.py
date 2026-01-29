@@ -7,6 +7,7 @@ from mirage.api.main import app
 from mirage.api.dependencies import get_db_session, get_settings, get_embedding_client
 from mirage.shared.config import Settings
 from mirage.shared.db import Base, ProjectTable, DocumentTable, ChunkTable
+from mirage.shared.embedding import EmbeddingResult
 
 
 @pytest.fixture
@@ -41,7 +42,7 @@ async def test_db():
             id="test-chunk-id",
             document_id="test-doc-id",
             content="This is test content about Python programming.",
-            embedding_json=[0.1] * 1024,
+            embedding=[0.1] * 1024,
             position=0,
             structure_json={"chapter": "Introduction"},
         )
@@ -69,7 +70,7 @@ def override_settings():
 @pytest.fixture
 def mock_embedding():
     mock = AsyncMock()
-    mock.get_embedding = AsyncMock(return_value=[0.1] * 1024)
+    mock.get_embedding = AsyncMock(return_value=EmbeddingResult(embedding=[0.1] * 1024, truncated=False))
     app.dependency_overrides[get_embedding_client] = lambda: mock
     yield mock
     app.dependency_overrides.clear()

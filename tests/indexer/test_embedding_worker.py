@@ -76,7 +76,7 @@ async def test_embedding_worker_processes_chunk_ready(settings, db_session):
             select(ChunkTable).where(ChunkTable.id == "chunk-1")
         )).scalar_one()
         assert chunk.status == "ready"
-        assert chunk.embedding_json == [0.1] * 1024
+        assert list(chunk.embedding) == [0.1] * 1024
 
 
 @pytest.mark.asyncio
@@ -97,7 +97,7 @@ async def test_embedding_worker_truncated_chunk(settings, db_session):
             select(ChunkTable).where(ChunkTable.id == "chunk-1")
         )).scalar_one()
         assert chunk.status == "corrupted"
-        assert chunk.embedding_json is not None
+        assert chunk.embedding is not None
 
 
 @pytest.mark.asyncio
@@ -116,7 +116,7 @@ async def test_embedding_worker_ollama_error(settings, db_session):
             select(ChunkTable).where(ChunkTable.id == "chunk-1")
         )).scalar_one()
         assert chunk.status == "error"
-        assert chunk.embedding_json is None
+        assert chunk.embedding is None
 
 
 @pytest.mark.asyncio

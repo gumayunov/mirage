@@ -47,10 +47,10 @@ class EmbeddingWorker:
         if result is None:
             chunk.status = "error"
         elif result.truncated:
-            chunk.embedding_json = result.embedding
+            chunk.embedding = result.embedding
             chunk.status = "corrupted"
         else:
-            chunk.embedding_json = result.embedding
+            chunk.embedding = result.embedding
             chunk.status = "ready"
 
         await session.commit()
