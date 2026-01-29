@@ -22,5 +22,12 @@ def test_settings_defaults(monkeypatch):
 
     assert settings.ollama_url == "http://ollama:11434"
     assert settings.ollama_model == "mxbai-embed-large"
-    assert settings.chunk_size == 128
+    assert settings.chunk_size == 400
     assert settings.chunk_overlap == 100
+
+
+def test_settings_chunk_size_default(monkeypatch):
+    monkeypatch.setenv("MIRAGE_DATABASE_URL", "sqlite:///test.db")
+    monkeypatch.setenv("MIRAGE_API_KEY", "test-key")
+    settings = Settings()
+    assert settings.chunk_size == 400
