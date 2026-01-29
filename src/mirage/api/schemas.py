@@ -27,6 +27,8 @@ class DocumentResponse(BaseModel):
     metadata: dict | None = Field(default=None, validation_alias="metadata_json")
     created_at: datetime
     indexed_at: datetime | None = None
+    chunks_total: int | None = None
+    chunks_processed: int | None = None
 
 
 class SearchRequest(BaseModel):

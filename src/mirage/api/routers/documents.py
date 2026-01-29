@@ -4,13 +4,13 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mirage.api.dependencies import get_db_session, get_settings, verify_api_key
 from mirage.api.schemas import DocumentResponse
 from mirage.shared.config import Settings
-from mirage.shared.db import DocumentTable, IndexingTaskTable, ProjectTable
+from mirage.shared.db import ChunkTable, DocumentTable, IndexingTaskTable, ProjectTable
 
 router = APIRouter(prefix="/projects/{project_id}/documents", tags=["documents"])
 
@@ -34,10 +34,45 @@ async def list_documents(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Project not found")
 
-    result = await db.execute(
+    docs_result = await db.execute(
         select(DocumentTable).where(DocumentTable.project_id == project_id)
     )
-    return result.scalars().all()
+    docs = docs_result.scalars().all()
+
+    # Get chunk counts per document in one query
+    if docs:
+        doc_ids = [d.id for d in docs]
+        counts_result = await db.execute(
+            select(
+                ChunkTable.document_id,
+                func.count().label("total"),
+                func.count().filter(
+                    ChunkTable.status.not_in(["pending", "processing"])
+                ).label("processed"),
+            )
+            .where(ChunkTable.document_id.in_(doc_ids))
+            .group_by(ChunkTable.document_id)
+        )
+        counts = {row[0]: (row[1], row[2]) for row in counts_result.fetchall()}
+    else:
+        counts = {}
+
+    return [
+        DocumentResponse(
+            id=doc.id,
+            project_id=doc.project_id,
+            filename=doc.filename,
+            file_type=doc.file_type,
+            status=doc.status,
+            error_message=doc.error_message,
+            metadata=doc.metadata_json,
+            created_at=doc.created_at,
+            indexed_at=doc.indexed_at,
+            chunks_total=counts.get(doc.id, (None, None))[0],
+            chunks_processed=counts.get(doc.id, (None, None))[1],
+        )
+        for doc in docs
+    ]
 
 
 @router.post("", response_model=DocumentResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -116,7 +151,36 @@ async def get_document(
     doc = result.scalar_one_or_none()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    return doc
+
+    # Count chunks
+    total_result = await db.execute(
+        select(func.count()).select_from(ChunkTable).where(
+            ChunkTable.document_id == document_id
+        )
+    )
+    total = total_result.scalar() or 0
+
+    processed_result = await db.execute(
+        select(func.count()).select_from(ChunkTable).where(
+            ChunkTable.document_id == document_id,
+            ChunkTable.status.not_in(["pending", "processing"]),
+        )
+    )
+    processed = processed_result.scalar() or 0
+
+    return DocumentResponse(
+        id=doc.id,
+        project_id=doc.project_id,
+        filename=doc.filename,
+        file_type=doc.file_type,
+        status=doc.status,
+        error_message=doc.error_message,
+        metadata=doc.metadata_json,
+        created_at=doc.created_at,
+        indexed_at=doc.indexed_at,
+        chunks_total=total if total > 0 else None,
+        chunks_processed=processed if total > 0 else None,
+    )
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

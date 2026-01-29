@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from mirage.api.main import app
 from mirage.api.dependencies import get_db_session, get_settings
 from mirage.shared.config import Settings
-from mirage.shared.db import Base, ProjectTable
+from mirage.shared.db import Base, ChunkTable, DocumentTable, ProjectTable
 
 
 @pytest.fixture
@@ -110,3 +110,41 @@ async def test_get_document_status(test_db, override_settings):
     assert response.status_code == 200
     data = response.json()
     assert data["filename"] == "test.md"
+
+
+@pytest.mark.asyncio
+async def test_document_status_includes_chunk_counts(test_db, override_settings):
+    # Create document with chunks in various statuses
+    engine = test_db
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
+    async with async_session() as session:
+        doc = DocumentTable(
+            id="doc-with-chunks",
+            project_id="test-project-id",
+            filename="chunked.md",
+            original_path="/tmp/chunked.md",
+            file_type="markdown",
+            status="indexing",
+        )
+        session.add(doc)
+        for i, status in enumerate(["ready", "ready", "pending", "processing"]):
+            chunk = ChunkTable(
+                document_id="doc-with-chunks",
+                content=f"Chunk {i}",
+                position=i,
+                status=status,
+            )
+            session.add(chunk)
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/projects/test-project-id/documents/doc-with-chunks",
+            headers={"X-API-Key": "test-key"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["chunks_total"] == 4
+    assert data["chunks_processed"] == 2  # only "ready" chunks are processed (not pending/processing)
