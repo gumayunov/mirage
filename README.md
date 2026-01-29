@@ -2,6 +2,8 @@
 
 Local RAG system for books and documentation. Supports PDF, EPUB, and Markdown files with vector search powered by pgvector and Ollama embeddings.
 
+> **Note:** Database migrations (Alembic) are not yet configured. Tables are created via `CREATE TABLE IF NOT EXISTS` on indexer startup. Existing data persists between restarts, but schema changes (new columns, altered types) require manually dropping and recreating tables. Alembic support is planned.
+
 ## Features
 
 - REST API for managing projects and documents
@@ -228,7 +230,8 @@ miRAGe
 - [x] Phase 1: Foundation (config, db, embedding client)
 - [x] Phase 2: API (projects, documents, search endpoints)
 - [x] Phase 3: Indexer (document parsing, chunking, embedding)
-- [ ] Phase 4: CLI integration
+- [x] Phase 3.5: Chunk Status (per-chunk embeddings, progress tracking)
+- [x] Phase 4: CLI integration
 - [ ] Phase 5: Infrastructure (Docker, Helm, migrations)
 
 ## License
