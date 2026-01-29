@@ -22,9 +22,9 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task 4.5: Indexer worker
 
 ## Phase 3.5.1: Chunk Status — Foundation
-- [ ] Task CSL-1: Add `status` column to ChunkTable
-- [ ] Task CSL-2: Return `EmbeddingResult` from embedding client
-- [ ] Task CSL-3: Update `chunk_size` default to 400
+- [x] Task CSL-1: Add `status` column to ChunkTable
+- [x] Task CSL-2: Return `EmbeddingResult` from embedding client
+- [x] Task CSL-3: Update `chunk_size` default to 400
 
 ## Phase 3.5.2: Chunk Status — Worker Pipeline
 - [ ] Task CSL-4: ChunkWorker (parse documents, save chunks without embeddings)
