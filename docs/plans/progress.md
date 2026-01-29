@@ -21,6 +21,17 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task 4.4: Chunking module
 - [x] Task 4.5: Indexer worker
 
+## Chunk Status Lifecycle (2026-01-29)
+- [ ] Task 1: Add `status` column to ChunkTable
+- [ ] Task 2: Return `EmbeddingResult` from embedding client
+- [ ] Task 3: Update `chunk_size` default to 400
+- [ ] Task 4: ChunkWorker (parse documents, save chunks without embeddings)
+- [ ] Task 5: EmbeddingWorker (per-chunk embedding with atomic claim)
+- [ ] Task 6: StatusWorker (document status from chunk counts)
+- [ ] Task 7: API — chunk progress in DocumentResponse
+- [ ] Task 8: CLI — chunk progress in `status` and `list`
+- [ ] Task 9: Full test suite regression fix
+
 ## Phase 4: CLI Integration
 - [ ] Task 5.1: CLI entry point
 - [ ] Task 5.2: Document commands
@@ -47,7 +58,7 @@ This file tracks the implementation progress across all phases. Update checkboxe
 When resuming work:
 1. Read this file to see current progress
 2. Find the first unchecked task
-3. Read the corresponding phase plan in `docs/plans/phase-N-*.md`
+3. Read the corresponding plan in `docs/plans/`
 4. Continue from that task
 
 When completing a task:
