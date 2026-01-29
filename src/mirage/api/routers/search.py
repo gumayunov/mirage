@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,6 +9,8 @@ from mirage.api.dependencies import get_db_session, get_embedding_client, verify
 from mirage.api.schemas import ChunkResult, SearchRequest, SearchResponse
 from mirage.shared.db import ChunkTable, DocumentTable, ProjectTable
 from mirage.shared.embedding import OllamaEmbedding
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/projects/{project_id}/search", tags=["search"])
 
@@ -26,7 +29,14 @@ async def search(
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Project not found")
 
-    query_embedding = await embedding_client.get_embedding(request.query)
+    logger.info("Search request: project=%s query=%r limit=%d threshold=%.2f",
+                project_id, request.query, request.limit, request.threshold)
+
+    embedding_result = await embedding_client.get_embedding(request.query)
+    if embedding_result is None:
+        raise HTTPException(status_code=500, detail="Failed to generate query embedding")
+    query_embedding = embedding_result.embedding
+    logger.info("Query embedding: dims=%d", len(query_embedding))
 
     # For PostgreSQL with pgvector, use vector similarity search
     # For SQLite (testing), fall back to returning all chunks
@@ -50,10 +60,13 @@ async def search(
             },
         )
         rows = result.fetchall()
+        logger.info("pgvector returned %d rows", len(rows))
 
         results = []
         for row in rows:
             score = 1 - row.distance  # Convert distance to similarity
+            logger.debug("Chunk %s: distance=%.4f score=%.4f (threshold=%.2f) doc=%s",
+                         row.id, row.distance, score, request.threshold, row.filename)
             if score >= request.threshold:
                 results.append(
                     ChunkResult(
@@ -64,7 +77,14 @@ async def search(
                         document={"id": row.doc_id, "filename": row.filename},
                     )
                 )
+
+        if rows and not results:
+            best = min(rows, key=lambda r: r.distance)
+            logger.warning("All %d rows filtered by threshold %.2f; best score=%.4f",
+                           len(rows), request.threshold, 1 - best.distance)
+
     except Exception:
+        logger.exception("pgvector query failed, falling back to SQLite")
         # Fallback for SQLite (no vector search)
         result = await db.execute(
             select(ChunkTable, DocumentTable)
@@ -76,6 +96,7 @@ async def search(
             .limit(request.limit)
         )
         rows = result.all()
+        logger.info("Fallback returned %d rows", len(rows))
 
         results = []
         for chunk, doc in rows:
@@ -89,4 +110,5 @@ async def search(
                 )
             )
 
+    logger.info("Returning %d results", len(results))
     return SearchResponse(results=results)
