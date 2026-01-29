@@ -2,7 +2,7 @@
 
 Local RAG system for books and documentation. Supports PDF, EPUB, and Markdown files with vector search powered by pgvector and Ollama embeddings.
 
-> **Note:** Database migrations (Alembic) are not yet configured. Tables are created via `CREATE TABLE IF NOT EXISTS` on indexer startup. Existing data persists between restarts, but schema changes (new columns, altered types) require manually dropping and recreating tables. Alembic support is planned.
+> **Note:** Database migrations (Alembic) are not yet configured. Tables are created via `CREATE TABLE IF NOT EXISTS` on indexer startup. Data does not persist between restarts — tables are recreated each time. Alembic support is planned.
 
 ## Features
 
@@ -121,8 +121,8 @@ PROJECT_NAME="test-project"
 
 MIRAGE="uv run --project $PROJECT_ROOT mirage"
 
-PROJECT_ID=$($MIRAGE projects create "$PROJECT_NAME")
-DOC_ID=$($MIRAGE documents add --project "$PROJECT_ID" "$DOCUMENT_PATH")
+PROJECT_ID=$($MIRAGE projects create "$PROJECT_NAME" | awk '{print $NF}')
+DOC_ID=$($MIRAGE documents add --project "$PROJECT_ID" "$DOCUMENT_PATH" | head -1 | awk '{print $NF}')
 $MIRAGE documents status --project "$PROJECT_ID" "$DOC_ID"
 $MIRAGE documents list --project "$PROJECT_ID"
 ```

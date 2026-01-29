@@ -13,10 +13,10 @@ PROJECT_NAME="test-project"
 MIRAGE="uv run --project $PROJECT_ROOT mirage"
 
 # --- Create project ---
-PROJECT_ID=$($MIRAGE projects create "$PROJECT_NAME")
+PROJECT_ID=$($MIRAGE projects create "$PROJECT_NAME" | awk '{print $NF}')
 
 # --- Add document ---
-DOC_ID=$($MIRAGE documents add --project "$PROJECT_ID" "$DOCUMENT_PATH")
+DOC_ID=$($MIRAGE documents add --project "$PROJECT_ID" "$DOCUMENT_PATH" | head -1 | awk '{print $NF}')
 
 # --- Show document status ---
 $MIRAGE documents status --project "$PROJECT_ID" "$DOC_ID"
