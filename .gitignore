@@ -9,3 +9,6 @@ htmlcov/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+
+# Override global gitignore to track CLAUDE.md
+!CLAUDE.md
