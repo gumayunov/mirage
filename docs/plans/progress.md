@@ -18,8 +18,8 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task 4.1: Markdown parser
 - [x] Task 4.2: PDF parser
 - [x] Task 4.3: EPUB parser
-- [ ] Task 4.4: Chunking module
-- [ ] Task 4.5: Indexer worker
+- [x] Task 4.4: Chunking module
+- [x] Task 4.5: Indexer worker
 
 ## Phase 4: CLI Integration
 - [ ] Task 5.1: CLI entry point
