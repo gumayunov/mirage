@@ -42,7 +42,7 @@ class EmbeddingWorker:
         if not chunk:
             return False
 
-        result = await self.embedding_client.get_embedding(chunk.content)
+        result = await self.embedding_client.get_embedding(chunk.content, prefix="search_document: ")
 
         if result is None:
             chunk.status = "error"

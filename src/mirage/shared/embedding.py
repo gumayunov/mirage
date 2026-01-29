@@ -21,8 +21,8 @@ class OllamaEmbedding:
         self.base_url = base_url.rstrip("/")
         self.model = model
 
-    async def get_embedding(self, text: str) -> EmbeddingResult | None:
-        logger.info("Embedding request: %d chars | %s", len(text), text[:200])
+    async def get_embedding(self, text: str, prefix: str = "") -> EmbeddingResult | None:
+        logger.info("Embedding request: %d chars prefix=%r | %s", len(text), prefix, text[:200])
         truncated = False
         if len(text) > MAX_PROMPT_CHARS:
             logger.warning(
@@ -32,11 +32,13 @@ class OllamaEmbedding:
             text = text[:MAX_PROMPT_CHARS]
             truncated = True
 
+        prompt = f"{prefix}{text}" if prefix else text
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.base_url}/api/embeddings",
-                    json={"model": self.model, "prompt": text},
+                    json={"model": self.model, "prompt": prompt},
                     timeout=60.0,
                 )
                 response.raise_for_status()

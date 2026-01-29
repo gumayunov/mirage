@@ -32,7 +32,7 @@ async def search(
     logger.info("Search request: project=%s query=%r limit=%d threshold=%.2f",
                 project_id, request.query, request.limit, request.threshold)
 
-    embedding_result = await embedding_client.get_embedding(request.query)
+    embedding_result = await embedding_client.get_embedding(request.query, prefix="search_query: ")
     if embedding_result is None:
         raise HTTPException(status_code=500, detail="Failed to generate query embedding")
     query_embedding = embedding_result.embedding
