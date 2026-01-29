@@ -72,11 +72,6 @@ Phase 1
 cat docs/plans/phase-1-foundation.md
 ```
 
-## Original Plan
-
-Оригинальный монолитный план сохранен в:
-- [2026-01-28-mirage-full-implementation.md](2026-01-28-mirage-full-implementation.md)
-
 ## Architecture
 
 Общая архитектура проекта:
