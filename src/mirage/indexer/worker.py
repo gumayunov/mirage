@@ -26,6 +26,8 @@ class ChunkWorker:
             chunk_size=settings.chunk_size,
             overlap=settings.chunk_overlap,
         )
+        self.child_chunk_size = settings.child_chunk_size
+        self.child_chunk_overlap = settings.child_chunk_overlap
         self.parsers = {
             "markdown": MarkdownParser(),
             "pdf": PDFParser(),
@@ -116,24 +118,49 @@ class ChunkWorker:
                     )
                 )
 
-            # Parse file and create chunks
+            # Parse file — produces parent-level chunks
             chunks_data = self._parse_file(doc.original_path, doc.file_type)
 
+            parent_chunks = []
             for chunk_data in chunks_data:
-                chunk = ChunkTable(
+                parent = ChunkTable(
                     document_id=doc.id,
                     content=chunk_data["content"],
                     position=chunk_data["position"],
                     structure_json=chunk_data["structure"],
-                    status="pending",
+                    status="parent",
                 )
-                session.add(chunk)
+                session.add(parent)
+                parent_chunks.append((parent, chunk_data))
+
+            await session.flush()  # generate parent IDs
+
+            # Create child chunks for each parent
+            child_count = 0
+            for parent, chunk_data in parent_chunks:
+                children = self.chunker.chunk_children(
+                    parent.content,
+                    chunk_data["structure"],
+                    child_size=self.child_chunk_size,
+                    child_overlap=self.child_chunk_overlap,
+                )
+                for child in children:
+                    child_row = ChunkTable(
+                        document_id=doc.id,
+                        content=child.content,
+                        position=child.position,
+                        structure_json=child.structure,
+                        status="pending",
+                        parent_id=parent.id,
+                    )
+                    session.add(child_row)
+                    child_count += 1
 
             task.status = "done"
             task.completed_at = datetime.utcnow()
 
             await session.commit()
-            logger.info(f"Created {len(chunks_data)} chunks for {doc.filename}")
+            logger.info(f"Created {len(parent_chunks)} parents, {child_count} children for {doc.filename}")
 
         except Exception as e:
             logger.error(f"Failed to process {doc.filename}: {e}")

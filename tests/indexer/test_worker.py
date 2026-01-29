@@ -77,18 +77,25 @@ async def test_chunk_worker_creates_pending_chunks(settings, db_session, tmp_pat
         task = task_result.scalar_one()
         await worker.process_task(session, task)
 
-    # Verify chunks were created with pending status and no embedding
+    # Verify parent and child chunks were created
     async with db_session() as session:
         chunks_result = await session.execute(
             select(ChunkTable).where(ChunkTable.document_id == "doc-1")
         )
         chunks = chunks_result.scalars().all()
 
-        assert len(chunks) >= 1
-        for chunk in chunks:
-            assert chunk.status == "pending"
-            assert chunk.embedding is None
-            assert chunk.content
+        assert len(chunks) >= 2  # at least 1 parent + 1 child
+        parents = [c for c in chunks if c.parent_id is None]
+        children = [c for c in chunks if c.parent_id is not None]
+        assert len(parents) >= 1
+        assert len(children) >= 1
+        for p in parents:
+            assert p.status == "parent"
+            assert p.embedding is None
+        for c in children:
+            assert c.status == "pending"
+            assert c.embedding is None
+            assert c.content
 
         # Verify document status is now "indexing"
         doc_result = await session.execute(
@@ -143,3 +150,56 @@ async def test_chunk_worker_sets_error_on_parse_failure(settings, db_session, tm
         doc = doc_result.scalar_one()
         assert doc.status == "error"
         assert doc.error_message is not None
+
+
+@pytest.mark.asyncio
+async def test_chunk_worker_creates_parent_and_child_chunks(settings, db_session, tmp_path):
+    # Create a markdown file long enough to produce multiple parent chunks
+    content = "# Test\n\n" + ("This is a test paragraph with enough text. " * 100 + "\n\n") * 20
+    md_file = tmp_path / "test_pc.md"
+    md_file.write_text(content)
+
+    async with db_session() as session:
+        doc = DocumentTable(
+            id="doc-pc",
+            project_id="proj-1",
+            filename="test_pc.md",
+            original_path=str(md_file),
+            file_type="markdown",
+            status="pending",
+        )
+        session.add(doc)
+        task = IndexingTaskTable(
+            id="task-pc",
+            document_id="doc-pc",
+            task_type="index",
+            status="pending",
+        )
+        session.add(task)
+        await session.commit()
+
+    worker = ChunkWorker(settings)
+
+    async with db_session() as session:
+        task = (await session.execute(select(IndexingTaskTable).where(IndexingTaskTable.id == "task-pc"))).scalar_one()
+        await worker.process_task(session, task)
+
+    async with db_session() as session:
+        all_chunks = (await session.execute(select(ChunkTable).where(ChunkTable.document_id == "doc-pc"))).scalars().all()
+
+        parents = [c for c in all_chunks if c.parent_id is None]
+        children = [c for c in all_chunks if c.parent_id is not None]
+
+        assert len(parents) > 0, "Should have parent chunks"
+        assert len(children) > 0, "Should have child chunks"
+
+        # Parents should have status="parent"
+        for p in parents:
+            assert p.status == "parent"
+            assert p.embedding is None
+
+        # Children should have status="pending" and valid parent_id
+        parent_ids = {p.id for p in parents}
+        for c in children:
+            assert c.status == "pending"
+            assert c.parent_id in parent_ids
