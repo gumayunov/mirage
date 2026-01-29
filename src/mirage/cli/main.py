@@ -3,11 +3,14 @@ from typing import Optional
 import typer
 
 from mirage import __version__
+from mirage.cli.commands import documents
 
 app = typer.Typer(
     name="mirage",
     help="miRAGe - Local RAG system for books and documentation",
 )
+
+app.add_typer(documents.app, name="documents")
 
 
 def version_callback(value: bool):
