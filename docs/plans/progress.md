@@ -22,15 +22,15 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task 4.5: Indexer worker
 
 ## Chunk Status Lifecycle (2026-01-29)
-- [ ] Task 1: Add `status` column to ChunkTable
-- [ ] Task 2: Return `EmbeddingResult` from embedding client
-- [ ] Task 3: Update `chunk_size` default to 400
-- [ ] Task 4: ChunkWorker (parse documents, save chunks without embeddings)
-- [ ] Task 5: EmbeddingWorker (per-chunk embedding with atomic claim)
-- [ ] Task 6: StatusWorker (document status from chunk counts)
-- [ ] Task 7: API — chunk progress in DocumentResponse
-- [ ] Task 8: CLI — chunk progress in `status` and `list`
-- [ ] Task 9: Full test suite regression fix
+- [ ] Task CSL-1: Add `status` column to ChunkTable
+- [ ] Task CSL-2: Return `EmbeddingResult` from embedding client
+- [ ] Task CSL-3: Update `chunk_size` default to 400
+- [ ] Task CSL-4: ChunkWorker (parse documents, save chunks without embeddings)
+- [ ] Task CSL-5: EmbeddingWorker (per-chunk embedding with atomic claim)
+- [ ] Task CSL-6: StatusWorker (document status from chunk counts)
+- [ ] Task CSL-7: API — chunk progress in DocumentResponse
+- [ ] Task CSL-8: CLI — chunk progress in `status` and `list`
+- [ ] Task CSL-9: Full test suite regression fix
 
 ## Phase 4: CLI Integration
 - [x] Task 5.1: CLI entry point

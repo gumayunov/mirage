@@ -12,7 +12,7 @@
 
 ---
 
-### Task 1: Add `status` column to ChunkTable
+### Task CSL-1: Add `status` column to ChunkTable
 
 **Files:**
 - Modify: `src/mirage/shared/db.py:42-53`
@@ -65,7 +65,7 @@ git commit -m "feat: add status column to ChunkTable"
 
 ---
 
-### Task 2: Return `EmbeddingResult` from embedding client
+### Task CSL-2: Return `EmbeddingResult` from embedding client
 
 **Files:**
 - Modify: `src/mirage/shared/embedding.py`
@@ -197,7 +197,7 @@ git commit -m "feat: return EmbeddingResult from embedding client, handle errors
 
 ---
 
-### Task 3: Update `chunk_size` config default
+### Task CSL-3: Update `chunk_size` config default
 
 **Files:**
 - Modify: `src/mirage/shared/config.py:9`
@@ -242,7 +242,7 @@ git commit -m "feat: increase default chunk_size to 400"
 
 ---
 
-### Task 4: ChunkWorker — parses documents and saves chunks
+### Task CSL-4: ChunkWorker — parses documents and saves chunks
 
 **Files:**
 - Modify: `src/mirage/indexer/worker.py`
@@ -598,7 +598,7 @@ git commit -m "feat: replace IndexerWorker with ChunkWorker (parse only, no embe
 
 ---
 
-### Task 5: EmbeddingWorker — processes chunks individually
+### Task CSL-5: EmbeddingWorker — processes chunks individually
 
 **Files:**
 - Create: `src/mirage/indexer/embedding_worker.py`
@@ -847,7 +847,7 @@ git commit -m "feat: add EmbeddingWorker for per-chunk embedding processing"
 
 ---
 
-### Task 6: StatusWorker — computes document status from chunks
+### Task CSL-6: StatusWorker — computes document status from chunks
 
 **Files:**
 - Create: `src/mirage/indexer/status_worker.py`
@@ -1087,7 +1087,7 @@ git commit -m "feat: add StatusWorker for document status computation"
 
 ---
 
-### Task 7: API — add chunk progress to DocumentResponse
+### Task CSL-7: API — add chunk progress to DocumentResponse
 
 **Files:**
 - Modify: `src/mirage/api/schemas.py:18-29`
@@ -1289,7 +1289,7 @@ git commit -m "feat: add chunk progress counts to document API responses"
 
 ---
 
-### Task 8: CLI — display chunk progress
+### Task CSL-8: CLI — display chunk progress
 
 **Files:**
 - Modify: `src/mirage/cli/commands/documents.py:85-104` (status command)
@@ -1437,7 +1437,7 @@ git commit -m "feat: display chunk progress in CLI documents commands"
 
 ---
 
-### Task 9: Final — run all tests and fix regressions
+### Task CSL-9: Final — run all tests and fix regressions
 
 **Step 1: Run the full test suite**
 
