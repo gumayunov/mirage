@@ -21,13 +21,17 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task 4.4: Chunking module
 - [x] Task 4.5: Indexer worker
 
-## Chunk Status Lifecycle (2026-01-29)
+## Phase 3.5.1: Chunk Status — Foundation
 - [ ] Task CSL-1: Add `status` column to ChunkTable
 - [ ] Task CSL-2: Return `EmbeddingResult` from embedding client
 - [ ] Task CSL-3: Update `chunk_size` default to 400
+
+## Phase 3.5.2: Chunk Status — Worker Pipeline
 - [ ] Task CSL-4: ChunkWorker (parse documents, save chunks without embeddings)
 - [ ] Task CSL-5: EmbeddingWorker (per-chunk embedding with atomic claim)
 - [ ] Task CSL-6: StatusWorker (document status from chunk counts)
+
+## Phase 3.5.3: Chunk Status — Visibility
 - [ ] Task CSL-7: API — chunk progress in DocumentResponse
 - [ ] Task CSL-8: CLI — chunk progress in `status` and `list`
 - [ ] Task CSL-9: Full test suite regression fix
@@ -39,7 +43,7 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [ ] Task 8.1: Claude Code skill
 
 ## Phase 5: Infrastructure
-- [ ] Task 7.1: Dockerfile
+- [x] Task 7.1: Dockerfile
 - [ ] Task 7.2: Indexer entrypoint
 - [ ] Task 7.3: Database migrations (Alembic)
 - [ ] Task 6.1: Helm chart base
