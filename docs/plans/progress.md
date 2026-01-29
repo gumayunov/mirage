@@ -33,9 +33,9 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [ ] Task 9: Full test suite regression fix
 
 ## Phase 4: CLI Integration
-- [ ] Task 5.1: CLI entry point
-- [ ] Task 5.2: Document commands
-- [ ] Task 5.3: Search command
+- [x] Task 5.1: CLI entry point
+- [x] Task 5.2: Document commands
+- [x] Task 5.3: Search command
 - [ ] Task 8.1: Claude Code skill
 
 ## Phase 5: Infrastructure
