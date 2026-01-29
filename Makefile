@@ -30,7 +30,7 @@ dev-logs:
 
 # Run API server
 api:
-	MIRAGE_DATABASE_URL="postgresql+asyncpg://mirage:mirage@localhost:5432/mirage" \
+	MIRAGE_DATABASE_URL="postgresql+asyncpg://mirage:mirage@localhost:5433/mirage" \
 	MIRAGE_API_KEY="dev-api-key" \
 	MIRAGE_OLLAMA_URL="http://localhost:11434" \
 	uv run uvicorn mirage.api.main:app --reload --host 0.0.0.0 --port 8000
