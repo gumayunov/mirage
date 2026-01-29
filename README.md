@@ -53,7 +53,13 @@ curl http://localhost:8000/health
 
 ## CLI
 
-The `mirage` CLI is a thin client to the API. Requires environment variables:
+The `mirage` CLI is a thin client to the API. Copy the example env file and fill in values:
+
+```bash
+cp .env.example .env
+```
+
+Or export variables directly:
 
 ```bash
 export MIRAGE_API_URL=http://localhost:8000/api/v1
@@ -97,84 +103,43 @@ mirage --help
 mirage documents --help
 ```
 
-## Verify Indexing
+## End-to-End Test
+
+A sample book (*The Art of War* by Sun Tzu, public domain) is included in `samples/`.
+
+The script `scripts/first-test.sh` creates a project, uploads the sample document, and checks its status:
 
 ```bash
-# 1. Create a project
-curl -X POST http://localhost:8000/api/v1/projects \
-  -H "X-API-Key: dev-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "test-project"}'
-# Save the project ID from response
+#!/usr/bin/env bash
+set -euo pipefail
+set -x
 
-# 2. Create a test markdown file
-echo -e "# Test Book\n\n## Chapter 1\n\nThis is test content about machine learning." > /tmp/test.md
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR/.."
+DOCUMENT_PATH="${1:-$PROJECT_ROOT/samples/the-art-of-war.epub}"
+PROJECT_NAME="test-project"
 
-# 3. Upload document
-curl -X POST http://localhost:8000/api/v1/projects/{project_id}/documents \
-  -H "X-API-Key: dev-api-key" \
-  -F "file=@/tmp/test.md"
-# Save the document ID from response
+MIRAGE="uv run --project $PROJECT_ROOT mirage"
 
-# 4. Check document status (should change from "pending" to "ready")
-curl http://localhost:8000/api/v1/projects/{project_id}/documents/{document_id} \
-  -H "X-API-Key: dev-api-key"
+PROJECT_ID=$($MIRAGE projects create "$PROJECT_NAME")
+DOC_ID=$($MIRAGE documents add --project "$PROJECT_ID" "$DOCUMENT_PATH")
+$MIRAGE documents status --project "$PROJECT_ID" "$DOC_ID"
+$MIRAGE documents list --project "$PROJECT_ID"
+```
 
-# 5. Search for content
-curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
-  -H "X-API-Key: dev-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "machine learning", "limit": 5}'
+Run it:
+
+```bash
+# Uses the bundled sample book
+./scripts/first-test.sh
+
+# Or specify your own document
+./scripts/first-test.sh /path/to/document.pdf
 ```
 
 ## API Usage
 
-All API endpoints require `X-API-Key` header (default: `dev-api-key`).
-
-### Projects
-
-```bash
-# Create project
-curl -X POST http://localhost:8000/api/v1/projects \
-  -H "X-API-Key: dev-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "my-docs"}'
-
-# List projects
-curl http://localhost:8000/api/v1/projects \
-  -H "X-API-Key: dev-api-key"
-
-# Delete project
-curl -X DELETE http://localhost:8000/api/v1/projects/{project_id} \
-  -H "X-API-Key: dev-api-key"
-```
-
-### Documents
-
-```bash
-# Upload document
-curl -X POST http://localhost:8000/api/v1/projects/{project_id}/documents \
-  -H "X-API-Key: dev-api-key" \
-  -F "file=@/path/to/document.pdf"
-
-# List documents
-curl http://localhost:8000/api/v1/projects/{project_id}/documents \
-  -H "X-API-Key: dev-api-key"
-
-# Get document status
-curl http://localhost:8000/api/v1/projects/{project_id}/documents/{document_id} \
-  -H "X-API-Key: dev-api-key"
-```
-
-### Search
-
-```bash
-# Search in project (requires indexed documents)
-curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
-  -H "X-API-Key: dev-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "your search query", "limit": 10}'
-```
+For raw HTTP API examples (curl), see [docs/raw-api.md](docs/raw-api.md).
 
 ## Development Commands
 
