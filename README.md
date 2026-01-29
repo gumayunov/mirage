@@ -207,23 +207,43 @@ Environment variables (set in docker-compose.yml):
 ## Architecture
 
 ```
-miRAGe
-├── API (FastAPI)           - REST endpoints
-│   ├── /health
-│   ├── /api/v1/projects
-│   ├── /api/v1/projects/{id}/documents
-│   └── /api/v1/projects/{id}/search
-├── Indexer (Worker)        - Document processing (Phase 3)
-│   ├── Parsers (MD, PDF, EPUB)
-│   └── Chunking + Embeddings
-├── Shared
-│   ├── Config (pydantic-settings)
-│   ├── DB (SQLAlchemy + pgvector)
-│   └── Embedding Client (Ollama)
-└── Infrastructure
-    ├── Docker Compose (local dev)
-    └── Helm Chart (k8s deployment)
+┌─────────────────────────────────────────────────────────────┐
+│                   k3s cluster (namespace: mirage)           │
+│                                                             │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
+│  │   miRAGe     │    │   miRAGe     │    │   Ollama     │   │
+│  │     API      │───▶│   Indexer    │───▶│  (embeddings)│   │
+│  └──────┬───────┘    └──────┬───────┘    └──────────────┘   │
+│         │                   │                               │
+│         ▼                   ▼                               │
+│  ┌─────────────────────────────────────┐                    │
+│  │      PostgreSQL + pgvector          │                    │
+│  │  ┌─────────┐ ┌─────────┐ ┌───────┐  │    ┌──────────┐    │
+│  │  │ chunks  │ │  tasks  │ │ docs  │  │    │   PV     │    │
+│  │  │+vectors │ │ (queue) │ │ meta  │  │    │ (files)  │    │
+│  │  └─────────┘ └─────────┘ └───────┘  │    └──────────┘    │
+│  └─────────────────────────────────────┘                    │
+└─────────────────────────────────────────────────────────────┘
+         ▲
+         │ API Key auth
+         │
+┌────────┴────────┐
+│  Claude Code    │
+│  + miRAGe skill │
+│  + CLI          │
+└─────────────────┘
 ```
+
+**Components:**
+- **API** — FastAPI, document CRUD, search, authentication
+- **Indexer** — ChunkWorker, EmbeddingWorker, StatusWorker (all run concurrently)
+- **PostgreSQL + pgvector** — metadata and vector storage
+- **Ollama** — embeddings (mxbai-embed-large)
+- **PV** — original file storage
+
+**Data flows:**
+- **Add document:** CLI → API → file to PV → task in DB → ChunkWorker parses → EmbeddingWorker embeds via Ollama → StatusWorker marks ready
+- **Search:** CLI → API → query embedding via Ollama → vector search → chunks with metadata
 
 ## Project Status
 
