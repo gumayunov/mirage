@@ -117,6 +117,12 @@ curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
 | `make db-shell` | Open PostgreSQL shell |
 | `make clean` | Stop containers and delete volumes |
 
+**Why `make dev` and `make api` are separate?**
+
+- `make dev` starts infrastructure (PostgreSQL, Ollama) in Docker containers running in background
+- `make api` runs the API server locally with hot reload — code changes apply instantly without restart
+- This separation enables faster development cycle and easier debugging (logs in terminal, debugger support)
+
 ## Configuration
 
 Environment variables (set automatically by `make api`):
