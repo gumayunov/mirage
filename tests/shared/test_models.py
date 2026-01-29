@@ -31,11 +31,24 @@ def test_chunk_model():
         id=uuid.uuid4(),
         document_id=uuid.uuid4(),
         content="Test content",
-        embedding=[0.1] * 1024,
+        embedding=[0.1] * 768,
         position=0,
         structure={"chapter": "Test"},
     )
     assert chunk.position == 0
+
+
+def test_chunk_model_with_parent():
+    chunk = Chunk(
+        id=uuid.uuid4(),
+        document_id=uuid.uuid4(),
+        content="Child content",
+        embedding=[0.1] * 768,
+        position=0,
+        structure={"chapter": "Test"},
+        parent_id=uuid.uuid4(),
+    )
+    assert chunk.parent_id is not None
 
 
 def test_indexing_task_model():

@@ -47,6 +47,7 @@ class Chunk(BaseModel):
     position: int
     structure: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    parent_id: uuid.UUID | None = None
 
 
 class IndexingTask(BaseModel):

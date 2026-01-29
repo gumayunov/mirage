@@ -46,13 +46,16 @@ class ChunkTable(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     document_id: Mapped[str] = mapped_column(String(36), ForeignKey("documents.id", ondelete="CASCADE"))
     content: Mapped[str] = mapped_column(Text)
-    embedding = mapped_column(Vector(1024), nullable=True)
+    embedding = mapped_column(Vector(768), nullable=True)
     position: Mapped[int] = mapped_column(Integer)
     structure_json: Mapped[str | None] = mapped_column("structure", JSON, nullable=True)
     metadata_json: Mapped[str | None] = mapped_column("metadata", JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="pending")
+    parent_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("chunks.id", ondelete="CASCADE"), nullable=True)
 
     document: Mapped["DocumentTable"] = relationship(back_populates="chunks")
+    children: Mapped[list["ChunkTable"]] = relationship(back_populates="parent", cascade="all, delete-orphan")
+    parent: Mapped["ChunkTable | None"] = relationship(back_populates="children", remote_side=[id])
 
 
 class IndexingTaskTable(Base):
