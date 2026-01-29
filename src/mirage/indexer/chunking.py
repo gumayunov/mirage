@@ -45,6 +45,17 @@ class Chunker:
 
         return pieces
 
+    def chunk_children(self, text: str, structure: dict[str, Any], child_size: int = 500, child_overlap: int = 50) -> list[Chunk]:
+        """Split a parent chunk text into smaller child chunks."""
+        if not text.strip():
+            return []
+
+        if self._count_tokens(text) <= child_size:
+            return [Chunk(content=text.strip(), position=0, structure=structure)]
+
+        child_chunker = Chunker(chunk_size=child_size, overlap=child_overlap)
+        return child_chunker.chunk_text(text, structure)
+
     def chunk_text(self, text: str, structure: dict[str, Any]) -> list[Chunk]:
         if not text.strip():
             return []

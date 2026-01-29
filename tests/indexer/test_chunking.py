@@ -61,3 +61,29 @@ def test_chunk_positions_are_sequential():
 
     positions = [c.position for c in chunks]
     assert positions == list(range(len(chunks)))
+
+
+def test_chunk_children_splits_parent():
+    """chunk_children splits a parent chunk into smaller child chunks."""
+    chunker = Chunker(chunk_size=3000, overlap=200)
+    # Create a parent text long enough to produce multiple children at 500 tokens
+    parent_text = "This is a sentence about programming. " * 200  # ~1000 tokens
+    structure = {"chapter": "Test"}
+
+    children = chunker.chunk_children(parent_text, structure, child_size=500, child_overlap=50)
+
+    assert len(children) >= 2
+    for child in children:
+        assert child.content
+        assert child.structure == structure
+
+
+def test_chunk_children_short_text():
+    """Short parent text produces a single child chunk."""
+    chunker = Chunker(chunk_size=3000, overlap=200)
+    structure = {"chapter": "Intro"}
+
+    children = chunker.chunk_children("Short text.", structure, child_size=500, child_overlap=50)
+
+    assert len(children) == 1
+    assert children[0].content == "Short text."
