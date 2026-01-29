@@ -27,9 +27,9 @@ This file tracks the implementation progress across all phases. Update checkboxe
 - [x] Task CSL-3: Update `chunk_size` default to 400
 
 ## Phase 3.5.2: Chunk Status — Worker Pipeline
-- [ ] Task CSL-4: ChunkWorker (parse documents, save chunks without embeddings)
-- [ ] Task CSL-5: EmbeddingWorker (per-chunk embedding with atomic claim)
-- [ ] Task CSL-6: StatusWorker (document status from chunk counts)
+- [x] Task CSL-4: ChunkWorker (parse documents, save chunks without embeddings)
+- [x] Task CSL-5: EmbeddingWorker (per-chunk embedding with atomic claim)
+- [x] Task CSL-6: StatusWorker (document status from chunk counts)
 
 ## Phase 3.5.3: Chunk Status — Visibility
 - [ ] Task CSL-7: API — chunk progress in DocumentResponse
