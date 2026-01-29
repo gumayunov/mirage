@@ -49,7 +49,53 @@ curl http://localhost:11434/api/embeddings -d '{
 curl http://localhost:8000/health
 ```
 
-### Verify Indexing
+## CLI
+
+The `mirage` CLI is a thin client to the API. Requires environment variables:
+
+```bash
+export MIRAGE_API_URL=http://localhost:8000/api/v1
+export MIRAGE_API_KEY=dev-api-key
+```
+
+### Documents
+
+```bash
+# List documents in a project
+mirage documents list --project my-docs
+
+# Upload a document
+mirage documents add --project my-docs /path/to/book.pdf
+
+# Check document status
+mirage documents status --project my-docs <document_id>
+
+# Remove a document
+mirage documents remove --project my-docs <document_id>
+```
+
+### Search
+
+```bash
+# Search across project documents
+mirage search --project my-docs "machine learning basics"
+
+# Limit number of results
+mirage search --project my-docs "neural networks" --limit 5
+```
+
+### Other
+
+```bash
+# Show version
+mirage --version
+
+# Show help
+mirage --help
+mirage documents --help
+```
+
+## Verify Indexing
 
 ```bash
 # 1. Create a project
