@@ -1,30 +1,45 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from mirage.shared.embedding import OllamaEmbedding
+
+from mirage.shared.embedding import OllamaEmbedding, EmbeddingResult, MAX_PROMPT_CHARS
 
 
 @pytest.mark.asyncio
-async def test_get_embedding():
+async def test_get_embedding_returns_result():
     mock_response = MagicMock()
     mock_response.json.return_value = {"embedding": [0.1] * 1024}
     mock_response.raise_for_status = MagicMock()
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response):
         client = OllamaEmbedding("http://localhost:11434", "mxbai-embed-large")
-        embedding = await client.get_embedding("test text")
+        result = await client.get_embedding("short text")
 
-    assert len(embedding) == 1024
-    assert embedding[0] == 0.1
+    assert isinstance(result, EmbeddingResult)
+    assert len(result.embedding) == 1024
+    assert result.truncated is False
 
 
 @pytest.mark.asyncio
-async def test_get_embeddings_batch():
+async def test_get_embedding_truncated():
     mock_response = MagicMock()
-    mock_response.json.return_value = {"embedding": [0.1] * 1024}
+    mock_response.json.return_value = {"embedding": [0.2] * 1024}
     mock_response.raise_for_status = MagicMock()
+
+    long_text = "x" * (MAX_PROMPT_CHARS + 100)
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_response):
         client = OllamaEmbedding("http://localhost:11434", "mxbai-embed-large")
-        embeddings = await client.get_embeddings(["text1", "text2"])
+        result = await client.get_embedding(long_text)
 
-    assert len(embeddings) == 2
+    assert isinstance(result, EmbeddingResult)
+    assert result.truncated is True
+    assert len(result.embedding) == 1024
+
+
+@pytest.mark.asyncio
+async def test_get_embedding_ollama_error():
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, side_effect=Exception("Connection refused")):
+        client = OllamaEmbedding("http://localhost:11434", "mxbai-embed-large")
+        result = await client.get_embedding("test text")
+
+    assert result is None
