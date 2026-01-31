@@ -87,11 +87,3 @@ async def create_tables(engine: AsyncEngine) -> None:
     await _ensure_pgvector(engine)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-
-async def recreate_tables(engine: AsyncEngine) -> None:
-    """Drop all tables and recreate them. WARNING: Destroys all data!"""
-    await _ensure_pgvector(engine)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
