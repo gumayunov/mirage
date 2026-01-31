@@ -5,7 +5,6 @@ from mirage.indexer.embedding_worker import EmbeddingWorker
 from mirage.indexer.status_worker import StatusWorker
 from mirage.indexer.worker import ChunkWorker
 from mirage.shared.config import Settings
-from mirage.shared.db import create_tables, get_engine
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +16,6 @@ async def main():
         level=settings.log_level.upper(),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-
-    # Create tables if needed
-    engine = get_engine(settings.database_url)
-    await create_tables(engine)
-    await engine.dispose()
 
     # Run all workers concurrently
     chunk_worker = ChunkWorker(settings)
