@@ -60,6 +60,10 @@ When completing a task:
 1. Mark checkbox in `progress.md`: `- [ ]` → `- [x]`
 2. Commit the update together with your implementation
 
+## Project Conventions
+
+When creating designs and plans, always use the structured-project-workflow skill for file naming and organization.
+
 ## Code Style
 
 - Use type hints
