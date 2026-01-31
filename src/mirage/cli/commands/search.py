@@ -40,4 +40,4 @@ def search(
                 typer.echo(f"Chapter: {structure['chapter']}")
             if "page" in structure:
                 typer.echo(f"Page: {structure['page']}")
-        typer.echo(f"\n{result['content'][:500]}...")
+        typer.echo(f"\n{result['content']}")

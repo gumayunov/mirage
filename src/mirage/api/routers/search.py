@@ -52,7 +52,8 @@ async def search(
             JOIN chunks parent ON child.parent_id = parent.id
             JOIN documents d ON child.document_id = d.id
             WHERE d.project_id = :project_id
-              AND d.status = 'ready'
+              AND d.status IN ('ready', 'partial')
+              AND child.status = 'ready'
               AND child.parent_id IS NOT NULL
             ORDER BY child.parent_id, child.embedding <=> :embedding
             LIMIT :limit
@@ -98,7 +99,8 @@ async def search(
             .join(DocumentTable)
             .where(
                 DocumentTable.project_id == project_id,
-                DocumentTable.status == "ready",
+                DocumentTable.status.in_(["ready", "partial"]),
+                ChunkTable.status == "ready",
                 ChunkTable.parent_id.is_not(None),
             )
             .limit(request.limit)
