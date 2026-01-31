@@ -64,7 +64,7 @@ This file tracks the implementation progress across all phases. Update checkboxe
 ## Phase 5: Infrastructure
 - [x] Task 7.1: Dockerfile
 - [x] Task 7.2: Indexer entrypoint
-- [ ] Task 7.3: Database migrations (Alembic)
+- [x] Task 7.3: Database migrations (Alembic)
 - [ ] Task 6.1: Helm chart base
 - [ ] Task 6.2: PostgreSQL templates
 - [ ] Task 6.3: Ollama templates

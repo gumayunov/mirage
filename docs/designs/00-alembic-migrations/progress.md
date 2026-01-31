@@ -6,7 +6,7 @@
 
 | Phase | Total | Done | Status |
 |-------|-------|------|--------|
-| 00    | 13    | 11   | 🔨 In progress |
+| 00    | 13    | 13   | ✅ Complete |
 
 ## Tasks
 
@@ -23,5 +23,5 @@
 - [x] `T00-00-09` — Add migrate target to Makefile
 - [x] `T00-00-10` — Add alembic.ini to Dockerfile COPY
 - [x] `T00-00-11` — Run full test suite (58 passed)
-- [ ] `T00-00-12` — Integration test with Docker
-- [ ] `T00-00-13` — Update global progress.md
+- [x] `T00-00-12` — Integration test with Docker
+- [x] `T00-00-13` — Update global progress.md
