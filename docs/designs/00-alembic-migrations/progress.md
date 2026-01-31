@@ -6,7 +6,7 @@
 
 | Phase | Total | Done | Status |
 |-------|-------|------|--------|
-| 00    | 13    | 6    | 🔨 In progress |
+| 00    | 13    | 9    | 🔨 In progress |
 
 ## Tasks
 
@@ -18,9 +18,9 @@
 - [x] `T00-00-04` — Create script.py.mako template
 - [x] `T00-00-05` — Create baseline migration
 - [x] `T00-00-06` — Remove recreate_tables from API lifespan
-- [ ] `T00-00-07` — Remove recreate_tables from db.py
-- [ ] `T00-00-08` — Remove create_tables from indexer startup
-- [ ] `T00-00-09` — Add migrate target to Makefile
+- [x] `T00-00-07` — Remove recreate_tables from db.py
+- [x] `T00-00-08` — Remove create_tables from indexer startup
+- [x] `T00-00-09` — Add migrate target to Makefile
 - [ ] `T00-00-10` — Add alembic.ini to Dockerfile COPY
 - [ ] `T00-00-11` — Run full test suite
 - [ ] `T00-00-12` — Integration test with Docker
