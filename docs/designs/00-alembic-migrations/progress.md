@@ -6,7 +6,7 @@
 
 | Phase | Total | Done | Status |
 |-------|-------|------|--------|
-| 00    | 13    | 3    | 🔨 In progress |
+| 00    | 13    | 6    | 🔨 In progress |
 
 ## Tasks
 
@@ -15,9 +15,9 @@
 - [x] `T00-00-01` — Add alembic dependency
 - [x] `T00-00-02` — Create alembic.ini
 - [x] `T00-00-03` — Create migrations env.py
-- [ ] `T00-00-04` — Create script.py.mako template
-- [ ] `T00-00-05` — Create baseline migration
-- [ ] `T00-00-06` — Remove recreate_tables from API lifespan
+- [x] `T00-00-04` — Create script.py.mako template
+- [x] `T00-00-05` — Create baseline migration
+- [x] `T00-00-06` — Remove recreate_tables from API lifespan
 - [ ] `T00-00-07` — Remove recreate_tables from db.py
 - [ ] `T00-00-08` — Remove create_tables from indexer startup
 - [ ] `T00-00-09` — Add migrate target to Makefile
