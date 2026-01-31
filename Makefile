@@ -1,4 +1,4 @@
-.PHONY: help setup dev dev-stop dev-logs dev-build test clean ollama-pull db-shell
+.PHONY: help setup dev dev-stop dev-logs dev-build test clean ollama-pull db-shell migrate migration
 
 # Default target
 help:
@@ -12,6 +12,8 @@ help:
 	@echo "  make test         - Run tests"
 	@echo "  make ollama-pull  - Download embedding model"
 	@echo "  make db-shell     - Open PostgreSQL shell"
+	@echo "  make migrate      - Run database migrations"
+	@echo "  make migration    - Generate new migration (msg='description')"
 	@echo "  make clean        - Stop services and remove volumes"
 
 # Install dependencies (for local testing)
@@ -53,6 +55,14 @@ ollama-pull:
 # Open PostgreSQL shell
 db-shell:
 	docker exec -it mirage-db psql -U mirage -d mirage
+
+# Run database migrations
+migrate:
+	docker exec mirage-api uv run alembic upgrade head
+
+# Generate a new migration (usage: make migration msg="add foo column")
+migration:
+	docker exec mirage-api uv run alembic revision --autogenerate -m "$(msg)"
 
 # Clean up everything
 clean:
