@@ -12,5 +12,7 @@ htmlcov/
 .ruff_cache/
 .DS_Store
 
+.worktrees/
+
 # Override global gitignore to track CLAUDE.md
 !CLAUDE.md
