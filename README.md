@@ -284,6 +284,90 @@ Environment variables (set in docker-compose.yml):
 - `project_models` — per-project model configuration
 - `embedding_status` — track embedding progress per chunk/model
 
+**ERD Diagram:**
+
+```mermaid
+erDiagram
+    projects ||--o{ documents : "has many"
+    projects ||--o{ project_models : "has many"
+    documents ||--o{ chunks : "has many"
+    documents ||--o{ indexing_tasks : "has many"
+    chunks ||--o{ chunks : "parent-child"
+    chunks ||--o{ embedding_status : "has many"
+    chunks ||--o{ embeddings_nomic_768 : "has many"
+    chunks ||--o{ embeddings_bge_m3_1024 : "has many"
+    chunks ||--o{ embeddings_mxbai_1024 : "has many"
+
+    projects {
+        string id PK
+        string name UK
+        string ollama_url
+        datetime created_at
+    }
+
+    documents {
+        string id PK
+        string project_id FK
+        string filename
+        string original_path
+        string file_type
+        string status
+        text error_message
+        json metadata_json
+        datetime created_at
+        datetime indexed_at
+    }
+
+    project_models {
+        string project_id FK, PK
+        string model_name PK
+        boolean enabled
+    }
+
+    chunks {
+        string id PK
+        string document_id FK
+        text content
+        integer position
+        json structure_json
+        json metadata_json
+        string status
+        string parent_id FK
+    }
+
+    embedding_status {
+        string chunk_id FK, PK
+        string model_name PK
+        string status
+        text error_message
+    }
+
+    embeddings_nomic_768 {
+        string chunk_id FK, PK
+        vector(768) embedding
+    }
+
+    embeddings_bge_m3_1024 {
+        string chunk_id FK, PK
+        vector(1024) embedding
+    }
+
+    embeddings_mxbai_1024 {
+        string chunk_id FK, PK
+        vector(1024) embedding
+    }
+
+    indexing_tasks {
+        string id PK
+        string document_id FK
+        string task_type
+        string status
+        datetime created_at
+        datetime started_at
+        datetime completed_at
+    }
+```
+
 **Data flows:**
 - **Add document:** CLI → API → file to PV → ChunkWorker parses → creates parent + child chunks → embedding_status rows per model → MultiModelEmbeddingWorker embeds child chunks → StatusWorker marks ready
 - **Search:** CLI → API → query embedding with all enabled models (parallel) → vector search child chunks → fetch parent content → deduplicate by chunk_id → ranked results
