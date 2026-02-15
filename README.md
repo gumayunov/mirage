@@ -1,5 +1,18 @@
 # miRAGe
 
+> **⚠️ Experimental Project**
+>
+> This is an experimental project to explore context engineering as a software development approach. It serves as a learning sandbox and is not intended for production use.
+>
+> **Status:** Experimental, work-in-progress. APIs and architecture may change.
+>
+> Development powered by:
+> - [z.ai GLM-5](https://z.ai/)
+> - [Claude Code](https://claude.ai/code)
+> - [Crush](https://crush.dev/)
+> - [skills.sh](https://skills.sh)
+> - [Superpowers Skills](https://skills.sh/obra/superpowers/)
+
 Local RAG system for books and documentation. Supports PDF, EPUB, and Markdown files with vector search powered by pgvector and Ollama embeddings.
 
 ## Features
@@ -232,18 +245,18 @@ Environment variables (set in docker-compose.yml):
 │  │      PostgreSQL + pgvector                  │            │
 │  │                                             │            │
 │  │  ┌─────────┐  ┌──────────────────────────┐  │            │
-│  │  │ chunks  │──┤ embeddings_nomic_768    │  │            │
-│  │  │ (no    │  │ embeddings_bge_m3_1024   │  │            │
-│  │  │ vector)│  │ embeddings_mxbai_1024    │  │            │
+│  │  │ chunks  │──┤ embeddings_nomic_768     │  │            │
+│  │  │ (no     │  │ embeddings_bge_m3_1024   │  │            │
+│  │  │ vector) │  │ embeddings_mxbai_1024    │  │            │
 │  │  └─────────┘  └──────────────────────────┘  │            │
-│  │  ┌─────────┐  ┌──────────────────────┐    │            │
-│  │  │ tasks   │  │ project_models        │    │            │
-│  │  │ (queue) │  │ embedding_status       │    │            │
-│  │  └─────────┘  └──────────────────────┘    │            │
-│  │  ┌─────────┐                             │    ┌──────────┐│
-│  │  │ docs    │                             │    │   PV     ││
-│  │  │ meta    │                             │    │ (files)  ││
-│  │  └─────────┘                             │    └──────────┘│
+│  │  ┌─────────┐  ┌──────────────────────┐      │            │
+│  │  │ tasks   │  │ project_models       │      │            │
+│  │  │ (queue) │  │ embedding_status     │      │            │
+│  │  └─────────┘  └──────────────────────┘      │            │
+│  │  ┌─────────┐                                │┌──────────┐│
+│  │  │ docs    │                                ││   PV     ││
+│  │  │ meta    │                                ││ (files)  ││
+│  │  └─────────┘                                │└──────────┘│
 │  └─────────────────────────────────────────────┘            │
 └─────────────────────────────────────────────────────────────┘
          ▲
