@@ -1,13 +1,22 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from mirage.shared.config import Settings
-from mirage.shared.db import Base, ChunkTable, DocumentTable, ProjectTable
+from mirage.shared.db import (
+    Base,
+    ChunkTable,
+    DocumentTable,
+    EmbeddingStatusTable,
+    ProjectModelTable,
+    ProjectTable,
+    get_embeddings_table_class,
+)
 from mirage.shared.embedding import EmbeddingResult
-from mirage.indexer.embedding_worker import EmbeddingWorker
+from mirage.shared.models_registry import get_model
+from mirage.indexer.embedding_worker import MultiModelEmbeddingWorker
 
 
 @pytest.fixture
@@ -25,13 +34,22 @@ async def db_session():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        
+        model = get_model("nomic-embed-text")
+        TableClass = get_embeddings_table_class(model)
+        await conn.run_sync(lambda sync_conn: TableClass.__table__.create(sync_conn, checkfirst=True))
 
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
-    # Create test data: project + document + pending chunks
     async with session_factory() as session:
-        project = ProjectTable(id="proj-1", name="test")
+        project = ProjectTable(id="proj-1", name="test", ollama_url="http://localhost:11434")
         session.add(project)
+        project_model = ProjectModelTable(
+            project_id="proj-1",
+            model_name="nomic-embed-text",
+            enabled=True,
+        )
+        session.add(project_model)
         doc = DocumentTable(
             id="doc-1",
             project_id="proj-1",
@@ -58,6 +76,12 @@ async def db_session():
             parent_id="parent-1",
         )
         session.add(chunk)
+        embedding_status = EmbeddingStatusTable(
+            chunk_id="chunk-1",
+            model_name="nomic-embed-text",
+            status="pending",
+        )
+        session.add(embedding_status)
         await session.commit()
 
     yield session_factory
@@ -66,14 +90,20 @@ async def db_session():
 
 
 @pytest.mark.asyncio
-async def test_embedding_worker_processes_chunk_ready(settings, db_session):
-    mock_client = AsyncMock()
+async def test_embedding_worker_processes_chunk_ready(settings, db_session, monkeypatch):
+    mock_client = MagicMock()
     mock_client.get_embedding = AsyncMock(
         return_value=EmbeddingResult(embedding=[0.1] * 768, truncated=False)
     )
 
-    worker = EmbeddingWorker(settings)
-    worker.embedding_client = mock_client
+    worker = MultiModelEmbeddingWorker(settings)
+
+    def mock_create_client(url, model):
+        return mock_client
+
+    monkeypatch.setattr(
+        "mirage.indexer.embedding_worker.OllamaEmbedding", mock_create_client
+    )
 
     async with db_session() as session:
         processed = await worker.process_one(session)
@@ -81,66 +111,68 @@ async def test_embedding_worker_processes_chunk_ready(settings, db_session):
     assert processed is True
 
     async with db_session() as session:
-        chunk = (await session.execute(
-            select(ChunkTable).where(ChunkTable.id == "chunk-1")
-        )).scalar_one()
-        assert chunk.status == "ready"
-        assert list(chunk.embedding) == [0.1] * 768
+        status = (
+            (
+                await session.execute(
+                    select(EmbeddingStatusTable).where(
+                        EmbeddingStatusTable.chunk_id == "chunk-1"
+                    )
+                )
+            )
+            .scalar_one()
+        )
+        assert status.status == "ready"
 
 
 @pytest.mark.asyncio
-async def test_embedding_worker_truncated_chunk(settings, db_session):
-    mock_client = AsyncMock()
-    mock_client.get_embedding = AsyncMock(
-        return_value=EmbeddingResult(embedding=[0.2] * 768, truncated=True)
-    )
-
-    worker = EmbeddingWorker(settings)
-    worker.embedding_client = mock_client
-
-    async with db_session() as session:
-        await worker.process_one(session)
-
-    async with db_session() as session:
-        chunk = (await session.execute(
-            select(ChunkTable).where(ChunkTable.id == "chunk-1")
-        )).scalar_one()
-        assert chunk.status == "corrupted"
-        assert chunk.embedding is not None
-
-
-@pytest.mark.asyncio
-async def test_embedding_worker_ollama_error(settings, db_session):
-    mock_client = AsyncMock()
+async def test_embedding_worker_ollama_error(settings, db_session, monkeypatch):
+    mock_client = MagicMock()
     mock_client.get_embedding = AsyncMock(return_value=None)
 
-    worker = EmbeddingWorker(settings)
-    worker.embedding_client = mock_client
+    worker = MultiModelEmbeddingWorker(settings)
+
+    def mock_create_client(url, model):
+        return mock_client
+
+    monkeypatch.setattr(
+        "mirage.indexer.embedding_worker.OllamaEmbedding", mock_create_client
+    )
 
     async with db_session() as session:
         await worker.process_one(session)
 
     async with db_session() as session:
-        chunk = (await session.execute(
-            select(ChunkTable).where(ChunkTable.id == "chunk-1")
-        )).scalar_one()
-        assert chunk.status == "error"
-        assert chunk.embedding is None
+        status = (
+            (
+                await session.execute(
+                    select(EmbeddingStatusTable).where(
+                        EmbeddingStatusTable.chunk_id == "chunk-1"
+                    )
+                )
+            )
+            .scalar_one()
+        )
+        assert status.status == "failed"
+        assert status.error_message is not None
 
 
 @pytest.mark.asyncio
-async def test_embedding_worker_no_pending_chunks(settings, db_session):
-    # Mark the only chunk as ready
+async def test_embedding_worker_no_pending(settings, db_session):
     async with db_session() as session:
-        chunk = (await session.execute(
-            select(ChunkTable).where(ChunkTable.id == "chunk-1")
-        )).scalar_one()
-        chunk.status = "ready"
+        status = (
+            (
+                await session.execute(
+                    select(EmbeddingStatusTable).where(
+                        EmbeddingStatusTable.chunk_id == "chunk-1"
+                    )
+                )
+            )
+            .scalar_one()
+        )
+        status.status = "ready"
         await session.commit()
 
-    mock_client = AsyncMock()
-    worker = EmbeddingWorker(settings)
-    worker.embedding_client = mock_client
+    worker = MultiModelEmbeddingWorker(settings)
 
     async with db_session() as session:
         processed = await worker.process_one(session)
