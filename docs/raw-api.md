@@ -35,11 +35,23 @@ curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
 ## Projects
 
 ```bash
-# Create project
+# Create project (uses all available models by default)
 curl -X POST http://localhost:8000/api/v1/projects \
   -H "X-API-Key: dev-api-key" \
   -H "Content-Type: application/json" \
   -d '{"name": "my-docs"}'
+
+# Create project with specific embedding models
+curl -X POST http://localhost:8000/api/v1/projects \
+  -H "X-API-Key: dev-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-docs", "models": ["nomic-embed-text", "bge-m3"]}'
+
+# Create project with custom Ollama URL
+curl -X POST http://localhost:8000/api/v1/projects \
+  -H "X-API-Key: dev-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-docs", "ollama_url": "http://custom-ollama:11434"}'
 
 # List projects
 curl http://localhost:8000/api/v1/projects \
@@ -75,4 +87,16 @@ curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
   -H "X-API-Key: dev-api-key" \
   -H "Content-Type: application/json" \
   -d '{"query": "your search query", "limit": 10}'
+
+# Search with threshold (default: 0.3)
+curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
+  -H "X-API-Key: dev-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "machine learning", "threshold": 0.5}'
+
+# Search filtering by specific models
+curl -X POST http://localhost:8000/api/v1/projects/{project_id}/search \
+  -H "X-API-Key: dev-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "neural networks", "models": ["nomic-embed-text", "bge-m3"]}'
 ```

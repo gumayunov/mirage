@@ -2,14 +2,32 @@
 
 Local RAG system for books and documentation. Supports PDF, EPUB, and Markdown files with vector search powered by pgvector and Ollama embeddings.
 
-> **Note:** Database migrations (Alembic) are not yet configured. Tables are created via `CREATE TABLE IF NOT EXISTS` on indexer startup. Data does not persist between restarts — tables are recreated each time. Alembic support is planned.
-
 ## Features
 
 - REST API for managing projects and documents
 - Vector search using pgvector (PostgreSQL)
-- Local embeddings via Ollama (mxbai-embed-large)
+- Local embeddings via Ollama (supports multiple models per project)
 - Supports PDF, EPUB, Markdown
+- Multi-model embeddings: use different embedding models for different projects
+- Parent-child chunking: small searchable chunks with large context windows
+
+## Supported Embedding Models
+
+miRAGe supports three embedding models with different strengths:
+
+| Model | Dimensions | Context | Languages | Speed | Quality |
+|-------|------------|---------|-----------|-------|---------|
+| `nomic-embed-text` | 768 | 8192 | EN (best), others | Fast | Good |
+| `bge-m3` | 1024 | 8192 | Multilingual (excellent) | Medium | Excellent |
+| `mxbai-embed-large` | 1024 | 512 | EN (best), others | Fast | Excellent (short) |
+
+**Recommendations:**
+- **English documentation:** `bge-m3` + `nomic-embed-text`
+- **Multilingual (RU/EN):** `bge-m3` only
+- **High-volume indexing:** `nomic-embed-text` only
+- **Quality comparison:** use all three models (default)
+
+See [docs/supported_models.md](docs/supported_models.md) for detailed comparison.
 
 ## Quick Start
 
@@ -66,6 +84,25 @@ export MIRAGE_API_URL=http://localhost:8000/api/v1
 export MIRAGE_API_KEY=dev-api-key
 ```
 
+### Projects
+
+```bash
+# Create a project (uses all available models by default)
+mirage projects create my-docs
+
+# Create a project with specific embedding models
+mirage projects create my-docs --model nomic-embed-text --model bge-m3
+
+# Create a project with custom Ollama URL
+mirage projects create my-docs --ollama-url http://custom-ollama:11434
+
+# List projects (shows models configured for each)
+mirage projects list
+
+# Delete a project
+mirage projects delete <project_id>
+```
+
 ### Documents
 
 ```bash
@@ -90,6 +127,13 @@ mirage search --project my-docs "machine learning basics"
 
 # Limit number of results
 mirage search --project my-docs "neural networks" --limit 5
+
+# Set minimum similarity threshold (default: 0.3)
+mirage search --project my-docs "deep learning" --threshold 0.5
+
+# Filter by specific embedding models
+mirage search --project my-docs "ai concepts" --model nomic-embed-text
+mirage search --project my-docs "ai concepts" --model nomic-embed-text --model bge-m3
 ```
 
 ### Other
@@ -163,11 +207,14 @@ Environment variables (set in docker-compose.yml):
 |----------|---------|-------------|
 | `MIRAGE_DATABASE_URL` | - | PostgreSQL connection string |
 | `MIRAGE_API_KEY` | - | API authentication key |
-| `MIRAGE_OLLAMA_URL` | `http://ollama:11434` | Ollama server URL |
-| `MIRAGE_OLLAMA_MODEL` | `mxbai-embed-large` | Embedding model |
-| `MIRAGE_CHUNK_SIZE` | `800` | Text chunk size |
-| `MIRAGE_CHUNK_OVERLAP` | `100` | Chunk overlap |
+| `MIRAGE_OLLAMA_URL` | `http://ollama:11434` | Default Ollama server URL |
+| `MIRAGE_CHUNK_SIZE` | `3000` | Parent chunk size (chars) |
+| `MIRAGE_CHUNK_OVERLAP` | `200` | Parent chunk overlap |
+| `MIRAGE_CHILD_CHUNK_SIZE` | `500` | Child chunk size |
+| `MIRAGE_CHILD_CHUNK_OVERLAP` | `50` | Child chunk overlap |
 | `MIRAGE_DOCUMENTS_PATH` | `/data/documents` | Document storage path |
+
+**Embedding models** are configured per-project via API/CLI (`--model` flag), not via environment variables. Each project can use multiple models simultaneously and can override the default Ollama URL.
 
 ## Architecture
 
@@ -181,13 +228,23 @@ Environment variables (set in docker-compose.yml):
 │  └──────┬───────┘    └──────┬───────┘    └──────────────┘   │
 │         │                   │                               │
 │         ▼                   ▼                               │
-│  ┌─────────────────────────────────────┐                    │
-│  │      PostgreSQL + pgvector          │                    │
-│  │  ┌─────────┐ ┌─────────┐ ┌───────┐  │    ┌──────────┐    │
-│  │  │ chunks  │ │  tasks  │ │ docs  │  │    │   PV     │    │
-│  │  │+vectors │ │ (queue) │ │ meta  │  │    │ (files)  │    │
-│  │  └─────────┘ └─────────┘ └───────┘  │    └──────────┘    │
-│  └─────────────────────────────────────┘                    │
+│  ┌─────────────────────────────────────────────┐            │
+│  │      PostgreSQL + pgvector                  │            │
+│  │                                             │            │
+│  │  ┌─────────┐  ┌──────────────────────────┐  │            │
+│  │  │ chunks  │──┤ embeddings_nomic_768    │  │            │
+│  │  │ (no    │  │ embeddings_bge_m3_1024   │  │            │
+│  │  │ vector)│  │ embeddings_mxbai_1024    │  │            │
+│  │  └─────────┘  └──────────────────────────┘  │            │
+│  │  ┌─────────┐  ┌──────────────────────┐    │            │
+│  │  │ tasks   │  │ project_models        │    │            │
+│  │  │ (queue) │  │ embedding_status       │    │            │
+│  │  └─────────┘  └──────────────────────┘    │            │
+│  │  ┌─────────┐                             │    ┌──────────┐│
+│  │  │ docs    │                             │    │   PV     ││
+│  │  │ meta    │                             │    │ (files)  ││
+│  │  └─────────┘                             │    └──────────┘│
+│  └─────────────────────────────────────────────┘            │
 └─────────────────────────────────────────────────────────────┘
          ▲
          │ API Key auth
@@ -201,14 +258,91 @@ Environment variables (set in docker-compose.yml):
 
 **Components:**
 - **API** — FastAPI, document CRUD, search, authentication
-- **Indexer** — ChunkWorker, EmbeddingWorker, StatusWorker (all run concurrently)
+- **Indexer** — ChunkWorker, MultiModelEmbeddingWorker, StatusWorker (all run concurrently)
 - **PostgreSQL + pgvector** — metadata and vector storage
-- **Ollama** — embeddings (mxbai-embed-large)
+- **Ollama** — local embeddings (supports multiple models per project)
 - **PV** — original file storage
 
+**Database Schema (multi-model):**
+- `chunks` — text chunks without embeddings (separate storage)
+- `embeddings_nomic_768` — 768-dimension vectors
+- `embeddings_bge_m3_1024` — 1024-dimension vectors
+- `embeddings_mxbai_1024` — 1024-dimension vectors
+- `project_models` — per-project model configuration
+- `embedding_status` — track embedding progress per chunk/model
+
 **Data flows:**
-- **Add document:** CLI → API → file to PV → task in DB → ChunkWorker parses → EmbeddingWorker embeds via Ollama → StatusWorker marks ready
-- **Search:** CLI → API → query embedding via Ollama → vector search → chunks with metadata
+- **Add document:** CLI → API → file to PV → ChunkWorker parses → creates parent + child chunks → embedding_status rows per model → MultiModelEmbeddingWorker embeds child chunks → StatusWorker marks ready
+- **Search:** CLI → API → query embedding with all enabled models (parallel) → vector search child chunks → fetch parent content → deduplicate by chunk_id → ranked results
+
+## Multi-Model Embeddings
+
+miRAGe supports using multiple embedding models simultaneously:
+
+**Per-Project Configuration:**
+- Each project specifies which models to use via `--model` flag
+- Default: all three models enabled
+- Custom Ollama URL per project (for distributed deployments)
+
+**Database Storage:**
+- Separate embeddings tables per model (`embeddings_nomic_768`, `embeddings_bge_m3_1024`, `embeddings_mxbai_1024`)
+- `embedding_status` table tracks progress per chunk per model
+- `project_models` table stores project-level model configuration
+
+**Indexing:**
+- All enabled models index documents in parallel
+- StatusWorker marks chunk ready only when all models have embeddings
+
+**Search:**
+- Queries all enabled models in parallel
+- Results deduplicated by chunk_id (keeps minimum distance)
+- Can filter by specific models with `--model` flag
+
+**Search Algorithm:**
+1. Get enabled models for the project
+2. Embed the query with each enabled model (parallel requests)
+3. For each model: execute vector search on corresponding `embeddings_{model}` table to find top-k matches
+4. Union all results from all enabled models
+5. Deduplicate by `chunk_id` — if the same chunk appears in multiple models' results, keep the entry with the minimum distance
+6. Sort all deduplicated results by distance (ascending)
+7. Limit to final k results
+8. Join with `chunks` table to get content and `parent_content`
+9. Return ranked results with metadata
+
+**Why keep minimum distance?**
+- Same chunk may rank differently across models
+- Minimum distance = highest similarity = best match
+- Ensures quality regardless of which model found it
+
+**Benefits:**
+- Compare search quality across models
+- Use model-specific strengths (multilingual vs fast vs accurate)
+- Future A/B testing capabilities
+
+## Parent-Child Chunking
+
+miRAGe uses a two-level chunking strategy for better retrieval quality:
+
+**Parent Chunks (3000 chars):**
+- Large context windows preserving document structure
+- Not embedded directly (storage optimization)
+- Provide full context for search results
+
+**Child Chunks (500 chars):**
+- Small, focused chunks for semantic search
+- Embedded and indexed in vector tables
+- Link to parent chunk via `parent_id`
+
+**Search Flow:**
+1. Query embedded → search child chunks → retrieve closest matches
+2. For each result → fetch parent content via `parent_id`
+3. Return child chunk with parent context for better comprehension
+
+**Benefits:**
+- Precise semantic search (small chunks)
+- Rich context in results (large parents)
+- Reduced embedding computation (only child chunks embedded)
+- Better document structure preservation
 
 ## Project Status
 

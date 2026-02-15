@@ -8,15 +8,23 @@ def search(
     query: str = typer.Argument(..., help="Search query"),
     project: str = typer.Option(..., "--project", "-p", help="Project ID"),
     limit: int = typer.Option(10, "--limit", "-l", help="Maximum results"),
+    threshold: float = typer.Option(0.3, "--threshold", "-t", help="Minimum similarity score (0.0-1.0)"),
+    models: list[str] = typer.Option(
+        None, "--model", "-m", help="Filter by embedding models (can be specified multiple times)"
+    ),
 ):
     """Search documents in a project."""
     url = f"{get_api_url()}/projects/{project}/search"
     headers = {"X-API-Key": get_api_key()}
 
+    payload = {"query": query, "limit": limit, "threshold": threshold}
+    if models:
+        payload["models"] = models
+
     response = httpx.post(
         url,
         headers=headers,
-        json={"query": query, "limit": limit},
+        json=payload,
         timeout=30.0,
     )
 
