@@ -12,7 +12,14 @@ from mirage.indexer.parsers.epub import EPUBParser
 from mirage.indexer.parsers.markdown import MarkdownParser
 from mirage.indexer.parsers.pdf import PDFParser
 from mirage.shared.config import Settings
-from mirage.shared.db import ChunkTable, DocumentTable, IndexingTaskTable, get_engine
+from mirage.shared.db import (
+    ChunkTable,
+    DocumentTable,
+    EmbeddingStatusTable,
+    IndexingTaskTable,
+    ProjectModelTable,
+    get_engine,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -156,11 +163,40 @@ class ChunkWorker:
                     session.add(child_row)
                     child_count += 1
 
+            await session.flush()  # generate child IDs
+
+            # Create embedding_status rows for all child chunks
+            result = await session.execute(
+                select(ProjectModelTable.model_name).where(
+                    ProjectModelTable.project_id == doc.project_id,
+                    ProjectModelTable.enabled == True,
+                )
+            )
+            enabled_models = [row[0] for row in result.fetchall()]
+
+            child_result = await session.execute(
+                select(ChunkTable.id).where(
+                    ChunkTable.document_id == doc.id,
+                    ChunkTable.parent_id.is_not(None),
+                )
+            )
+            child_ids = [row[0] for row in child_result.fetchall()]
+
+            for child_id in child_ids:
+                for model_name in enabled_models:
+                    status_row = EmbeddingStatusTable(
+                        chunk_id=child_id,
+                        model_name=model_name,
+                        status="pending",
+                    )
+                    session.add(status_row)
+
             task.status = "done"
             task.completed_at = datetime.utcnow()
 
             await session.commit()
-            logger.info(f"Created {len(parent_chunks)} parents, {child_count} children for {doc.filename}")
+            embedding_count = child_count * len(enabled_models) if enabled_models else 0
+            logger.info(f"Created {len(parent_chunks)} parents, {child_count} children, {embedding_count} embedding statuses for {doc.filename}")
 
         except Exception as e:
             logger.error(f"Failed to process {doc.filename}: {e}")
