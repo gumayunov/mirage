@@ -9,7 +9,7 @@ miRAGe is a local RAG (Retrieval-Augmented Generation) system for books. It inde
 - Python 3.14, uv
 - FastAPI (API)
 - SQLAlchemy + aiosqlite (database)
-- Ollama (embeddings)
+- Ollama (embeddings - supports multiple models per project)
 - PyMuPDF, ebooklib (document parsing)
 
 ## Development Commands
