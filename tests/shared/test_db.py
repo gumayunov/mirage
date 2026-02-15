@@ -6,7 +6,9 @@ from mirage.shared.db import (
     ProjectTable,
     ProjectModelTable,
     EmbeddingStatusTable,
+    get_embeddings_table_class,
 )
+from mirage.shared.models_registry import get_model
 
 
 @pytest.fixture
@@ -64,3 +66,17 @@ def test_embedding_status_table():
     )
     assert es.model_name == "nomic-embed-text"
     assert es.status == "pending"
+
+
+def test_get_embeddings_table_class_nomic():
+    """Test dynamic embeddings table class for nomic."""
+    model = get_model("nomic-embed-text")
+    TableClass = get_embeddings_table_class(model)
+    assert TableClass.__tablename__ == "embeddings_nomic_768"
+
+
+def test_get_embeddings_table_class_bge_m3():
+    """Test dynamic embeddings table class for bge-m3."""
+    model = get_model("bge-m3")
+    TableClass = get_embeddings_table_class(model)
+    assert TableClass.__tablename__ == "embeddings_bge_m3_1024"

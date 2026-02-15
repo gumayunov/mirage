@@ -1,10 +1,13 @@
 import uuid
 from datetime import datetime
+from typing import Type
 
 from sqlalchemy import String, Text, Integer, DateTime, ForeignKey, JSON, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
+
+from mirage.shared.models_registry import SupportedModel, get_model_table_name
 
 
 class Base(DeclarativeBase):
@@ -95,6 +98,32 @@ class IndexingTaskTable(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     document: Mapped["DocumentTable"] = relationship(back_populates="tasks")
+
+
+# Cache for dynamically created embeddings table classes
+_embeddings_table_classes: dict[str, Type] = {}
+
+
+def get_embeddings_table_class(model: SupportedModel) -> Type:
+    """Get or create an embeddings table class for a model."""
+    table_name = get_model_table_name(model.name)
+
+    if table_name in _embeddings_table_classes:
+        return _embeddings_table_classes[table_name]
+
+    class EmbeddingsTable(Base):
+        __tablename__ = table_name
+        __table_args__ = {"extend_existing": True}
+
+        chunk_id: Mapped[str] = mapped_column(
+            String(36), ForeignKey("chunks.id", ondelete="CASCADE"), primary_key=True
+        )
+        embedding = mapped_column(Vector(model.dimensions), nullable=False)
+
+    EmbeddingsTable.__name__ = f"EmbeddingsTable_{model.table_alias.title()}"
+    _embeddings_table_classes[table_name] = EmbeddingsTable
+
+    return EmbeddingsTable
 
 
 def get_engine(database_url: str) -> AsyncEngine:
