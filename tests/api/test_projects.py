@@ -93,3 +93,40 @@ async def test_delete_project(test_db, override_settings):
         )
 
     assert delete_response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_create_project_with_models(test_db, override_settings):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/projects",
+            json={
+                "name": "multi-model-project",
+                "models": ["nomic-embed-text", "bge-m3"],
+                "ollama_url": "http://custom-ollama:11434",
+            },
+            headers={"X-API-Key": "test-key"},
+        )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "multi-model-project"
+    assert data["ollama_url"] == "http://custom-ollama:11434"
+    assert set(m["model_name"] for m in data["models"]) == {"nomic-embed-text", "bge-m3"}
+
+
+@pytest.mark.asyncio
+async def test_create_project_default_models(test_db, override_settings):
+    """If models not specified, all supported models should be enabled."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/projects",
+            json={"name": "default-models-project"},
+            headers={"X-API-Key": "test-key"},
+        )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert len(data["models"]) == 3

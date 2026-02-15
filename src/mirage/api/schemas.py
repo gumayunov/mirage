@@ -5,6 +5,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ProjectCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
+    models: list[str] | None = None
+    ollama_url: str | None = None
+
+
+class ProjectModelResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    model_name: str
+    enabled: bool = True
 
 
 class ProjectResponse(BaseModel):
@@ -12,7 +21,9 @@ class ProjectResponse(BaseModel):
 
     id: str
     name: str
+    ollama_url: str = "http://ollama:11434"
     created_at: datetime
+    models: list[ProjectModelResponse] = []
 
 
 class DocumentResponse(BaseModel):
@@ -36,6 +47,7 @@ class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1)
     limit: int = Field(default=10, ge=1, le=100)
     threshold: float = Field(default=0.3, ge=0.0, le=1.0)
+    models: list[str] | None = None
 
 
 class ChunkResult(BaseModel):
