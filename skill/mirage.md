@@ -34,9 +34,15 @@ mirage documents remove --project <project_id> <document_id>
 # Document status
 mirage documents status --project <project_id> <document_id>
 
-# Search
-mirage search --project <project_id> "query" --limit 10
+# Search (supports multiple embedding models)
+mirage search --project <project_id> "query" --limit 10 --threshold 0.3 --model nomic-embed-text --model bge-m3
 ```
+
+## Search
+
+By default, use multi-model search (without `--model` flag) for better results. Only specify `--model` when the user explicitly requests a particular embedding model.
+
+Multi-model search queries all models enabled for the project in parallel and deduplicates results, providing more comprehensive coverage.
 
 ## Multi-hop Search
 
@@ -55,6 +61,6 @@ cat .mirage.yaml
 # Search for information
 mirage search --project my-project "dependency injection best practices" --limit 5
 
-# If more context needed, make additional queries
-mirage search --project my-project "constructor injection vs setter injection" --limit 5
+# Search with specific embedding model
+mirage search --project my-project "constructor injection vs setter injection" --model bge-m3
 ```
