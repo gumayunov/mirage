@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mirage.api.dependencies import get_db_session, verify_api_key
 from mirage.api.schemas import ChunkResult, SearchRequest, SearchResponse
-from mirage.shared.db import ChunkTable, DocumentTable, ProjectTable
+from mirage.shared.db import ProjectTable
 from mirage.shared.embedding import OllamaEmbedding
 from mirage.shared.models_registry import get_all_models, get_model, get_model_table_name
 

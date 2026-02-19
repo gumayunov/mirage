@@ -10,7 +10,6 @@ from mirage.shared.db import (
     ChunkTable,
     DocumentTable,
     EmbeddingStatusTable,
-    ProjectModelTable,
     ProjectTable,
     get_embeddings_table_class,
 )
@@ -44,12 +43,6 @@ async def db_session():
     async with session_factory() as session:
         project = ProjectTable(id="proj-1", name="test", ollama_url="http://localhost:11434")
         session.add(project)
-        project_model = ProjectModelTable(
-            project_id="proj-1",
-            model_name="nomic-embed-text",
-            enabled=True,
-        )
-        session.add(project_model)
         doc = DocumentTable(
             id="doc-1",
             project_id="proj-1",

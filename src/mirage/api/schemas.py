@@ -8,13 +8,6 @@ class ProjectCreate(BaseModel):
     ollama_url: str | None = None
 
 
-class ProjectModelResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    model_name: str
-    enabled: bool = True
-
-
 class ProjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -22,7 +15,6 @@ class ProjectResponse(BaseModel):
     name: str
     ollama_url: str = "http://ollama:11434"
     created_at: datetime
-    models: list[ProjectModelResponse] = []
 
 
 class DocumentResponse(BaseModel):

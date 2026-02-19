@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from mirage.api.main import app
 from mirage.api.dependencies import get_db_session, get_settings, get_embedding_client
 from mirage.shared.config import Settings
-from mirage.shared.db import Base, ProjectTable, DocumentTable, ChunkTable, ProjectModelTable
+from mirage.shared.db import Base, ProjectTable, DocumentTable, ChunkTable
 from mirage.shared.embedding import EmbeddingResult
 
 
@@ -27,14 +27,6 @@ async def test_db():
     async with async_session() as session:
         project = ProjectTable(id="test-project-id", name="test-project")
         session.add(project)
-
-        # Add default model for the project
-        project_model = ProjectModelTable(
-            project_id="test-project-id",
-            model_name="nomic-embed-text",
-            enabled=True,
-        )
-        session.add(project_model)
 
         doc = DocumentTable(
             id="test-doc-id",
@@ -117,14 +109,6 @@ async def test_db_with_parent_child():
     async with async_session() as session:
         project = ProjectTable(id="test-project-id", name="test-project")
         session.add(project)
-
-        # Add default model for the project
-        project_model = ProjectModelTable(
-            project_id="test-project-id",
-            model_name="nomic-embed-text",
-            enabled=True,
-        )
-        session.add(project_model)
 
         doc = DocumentTable(
             id="test-doc-id",

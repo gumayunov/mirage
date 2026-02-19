@@ -4,7 +4,6 @@ from mirage.shared.db import (
     get_engine,
     create_tables,
     ProjectTable,
-    ProjectModelTable,
     EmbeddingStatusTable,
     get_embeddings_table_class,
 )
@@ -44,17 +43,6 @@ async def test_chunks_table_has_status_column(test_db_url):
 
     assert "status" in columns
     await engine.dispose()
-
-
-def test_project_model_table():
-    """Test ProjectModelTable can be instantiated."""
-    pm = ProjectModelTable(
-        project_id="test-project-id",
-        model_name="bge-m3",
-        enabled=True,
-    )
-    assert pm.model_name == "bge-m3"
-    assert pm.enabled is True
 
 
 def test_embedding_status_table():
