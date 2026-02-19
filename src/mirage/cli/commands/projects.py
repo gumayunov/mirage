@@ -25,26 +25,20 @@ def list_projects():
         typer.echo("No projects found.")
         return
 
-    typer.echo(f"{'ID':<40} {'Name':<30} {'Models':<25} {'Created':<20}")
-    typer.echo("-" * 115)
+    typer.echo(f"{'ID':<40} {'Name':<30} {'Created':<20}")
+    typer.echo("-" * 90)
     for p in projects:
         created = p["created_at"][:19].replace("T", " ")
-        models = ", ".join(m["model_name"] for m in p.get("models", []))
-        typer.echo(f"{p['id']:<40} {p['name']:<30} {models:<25} {created:<20}")
+        typer.echo(f"{p['id']:<40} {p['name']:<30} {created:<20}")
 
 
 @app.command("create")
 def create_project(
     name: str = typer.Argument(..., help="Project name"),
-    models: list[str] = typer.Option(
-        None, "--model", "-m", help="Embedding models to use (can be specified multiple times)"
-    ),
     ollama_url: str | None = typer.Option(None, "--ollama-url", help="Ollama server URL"),
 ):
     """Create a new project."""
     payload: dict = {"name": name}
-    if models:
-        payload["models"] = models
     if ollama_url:
         payload["ollama_url"] = ollama_url
 
