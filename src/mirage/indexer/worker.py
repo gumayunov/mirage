@@ -17,9 +17,9 @@ from mirage.shared.db import (
     DocumentTable,
     EmbeddingStatusTable,
     IndexingTaskTable,
-    ProjectModelTable,
     get_engine,
 )
+from mirage.shared.models_registry import get_all_models
 
 logger = logging.getLogger(__name__)
 
@@ -166,13 +166,7 @@ class ChunkWorker:
             await session.flush()  # generate child IDs
 
             # Create embedding_status rows for all child chunks
-            result = await session.execute(
-                select(ProjectModelTable.model_name).where(
-                    ProjectModelTable.project_id == doc.project_id,
-                    ProjectModelTable.enabled == True,
-                )
-            )
-            enabled_models = [row[0] for row in result.fetchall()]
+            enabled_models = [m.name for m in get_all_models()]
 
             child_result = await session.execute(
                 select(ChunkTable.id).where(
