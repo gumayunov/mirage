@@ -23,7 +23,6 @@ class ProjectTable(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     documents: Mapped[list["DocumentTable"]] = relationship(back_populates="project", cascade="all, delete-orphan")
-    models: Mapped[list["ProjectModelTable"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
 
 class DocumentTable(Base):
@@ -43,19 +42,6 @@ class DocumentTable(Base):
     project: Mapped["ProjectTable"] = relationship(back_populates="documents")
     chunks: Mapped[list["ChunkTable"]] = relationship(back_populates="document", cascade="all, delete-orphan")
     tasks: Mapped[list["IndexingTaskTable"]] = relationship(back_populates="document", cascade="all, delete-orphan")
-
-
-class ProjectModelTable(Base):
-    __tablename__ = "project_models"
-
-    project_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True
-    )
-    model_name: Mapped[str] = mapped_column(String(100), primary_key=True)
-    enabled: Mapped[bool] = mapped_column(default=True)
-
-    project: Mapped["ProjectTable"] = relationship(back_populates="models")
-
 
 class EmbeddingStatusTable(Base):
     __tablename__ = "embedding_status"
