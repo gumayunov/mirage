@@ -10,7 +10,6 @@ from mirage.shared.db import (
     ChunkTable,
     DocumentTable,
     EmbeddingStatusTable,
-    ProjectModelTable,
     ProjectTable,
     get_embeddings_table_class,
     get_engine,
@@ -36,28 +35,20 @@ class MultiModelEmbeddingWorker:
         self.settings = settings
 
     async def _claim_pending(self, session: AsyncSession) -> PendingEmbedding | None:
-        """Find a pending embedding_status row with project's enabled model."""
+        """Find a pending embedding_status row."""
         result = await session.execute(
-            select(EmbeddingStatusTable, ChunkTable, ProjectModelTable, ProjectTable)
+            select(EmbeddingStatusTable, ChunkTable, DocumentTable, ProjectTable)
             .join(ChunkTable, EmbeddingStatusTable.chunk_id == ChunkTable.id)
             .join(DocumentTable, ChunkTable.document_id == DocumentTable.id)
             .join(ProjectTable, DocumentTable.project_id == ProjectTable.id)
-            .join(
-                ProjectModelTable,
-                (ProjectModelTable.project_id == ProjectTable.id)
-                & (ProjectModelTable.model_name == EmbeddingStatusTable.model_name),
-            )
-            .where(
-                EmbeddingStatusTable.status == "pending",
-                ProjectModelTable.enabled == True,
-            )
+            .where(EmbeddingStatusTable.status == "pending")
             .limit(1)
         )
         row = result.first()
         if not row:
             return None
 
-        embedding_status, chunk, _, project = row
+        embedding_status, chunk, document, project = row
 
         embedding_status.status = "processing"
         await session.flush()
