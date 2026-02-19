@@ -5,7 +5,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ProjectCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
-    models: list[str] | None = None
     ollama_url: str | None = None
 
 

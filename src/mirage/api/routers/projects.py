@@ -3,12 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from mirage.api.dependencies import get_db_session, verify_api_key
 from mirage.api.schemas import ProjectCreate, ProjectResponse
-from mirage.shared.db import ProjectTable, ProjectModelTable
-from mirage.shared.models_registry import get_all_models, get_model
+from mirage.shared.db import ProjectTable
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -18,9 +16,7 @@ async def list_projects(
     _: Annotated[str, Depends(verify_api_key)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ):
-    result = await db.execute(
-        select(ProjectTable).options(selectinload(ProjectTable.models))
-    )
+    result = await db.execute(select(ProjectTable))
     return result.scalars().all()
 
 
@@ -44,32 +40,10 @@ async def create_project(
         ollama_url=project.ollama_url or "http://ollama:11434",
     )
     db.add(db_project)
-    await db.flush()
-
-    if project.models:
-        model_names = project.models
-    else:
-        model_names = [m.name for m in get_all_models()]
-
-    for model_name in model_names:
-        if get_model(model_name) is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unknown model: {model_name}",
-            )
-        db_model = ProjectModelTable(
-            project_id=db_project.id,
-            model_name=model_name,
-            enabled=True,
-        )
-        db.add(db_model)
-
     await db.commit()
 
     result = await db.execute(
-        select(ProjectTable)
-        .where(ProjectTable.id == db_project.id)
-        .options(selectinload(ProjectTable.models))
+        select(ProjectTable).where(ProjectTable.id == db_project.id)
     )
     return result.scalar_one()
 
