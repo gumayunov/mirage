@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mirage.api.dependencies import get_db_session, verify_api_key
 from mirage.api.schemas import ChunkResult, SearchRequest, SearchResponse
-from mirage.shared.db import ChunkTable, DocumentTable, ProjectModelTable, ProjectTable
+from mirage.shared.db import ChunkTable, DocumentTable, ProjectTable
 from mirage.shared.embedding import OllamaEmbedding
-from mirage.shared.models_registry import get_model, get_model_table_name
+from mirage.shared.models_registry import get_all_models, get_model, get_model_table_name
 
 logger = logging.getLogger(__name__)
 
@@ -34,26 +34,17 @@ async def search(
     logger.info("Search request: project=%s query=%r limit=%d threshold=%.2f",
                 project_id, request.query, request.limit, request.threshold)
 
-    # Get enabled models (optionally filtered by request.models)
-    if request.models:
-        models_result = await db.execute(
-            select(ProjectModelTable.model_name).where(
-                ProjectModelTable.project_id == project_id,
-                ProjectModelTable.enabled == True,
-                ProjectModelTable.model_name.in_(request.models),
-            )
-        )
-    else:
-        models_result = await db.execute(
-            select(ProjectModelTable.model_name).where(
-                ProjectModelTable.project_id == project_id,
-                ProjectModelTable.enabled == True,
-            )
-        )
+    # Get models (optionally filtered by request.models)
+    all_model_names = [m.name for m in get_all_models()]
 
-    model_names = [row[0] for row in models_result.fetchall()]
-    if not model_names:
-        raise HTTPException(status_code=400, detail="No enabled models for search")
+    if request.models:
+        # Validate requested models exist
+        for m in request.models:
+            if m not in all_model_names:
+                raise HTTPException(status_code=400, detail=f"Unknown model: {m}")
+        model_names = request.models
+    else:
+        model_names = all_model_names
 
     # Embed query with each model (parallel)
     async def embed_query(model_name: str) -> tuple[str, list[float] | None]:
