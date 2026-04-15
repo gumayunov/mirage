@@ -4,7 +4,7 @@
 
 **Goal:** Refactor monolithic `IndexerWorker` into three independent workers: ChunkWorker (parse), EmbeddingWorker (embed), StatusWorker (aggregate status).
 
-**Parent design:** `docs/plans/2026-01-29-chunk-status-design.md`
+**Parent design:** `docs/designs/04-chunk-status/design.md`
 
 **Phases:**
 - **Phase 3.5.1 — Foundation:** Schema, embedding client, config

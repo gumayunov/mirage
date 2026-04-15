@@ -4,7 +4,7 @@
 
 **Goal:** Prepare the `shared/` layer for the worker pipeline: add chunk status tracking to the DB schema, return structured results from the embedding client, and adjust the default chunk size.
 
-**Parent design:** `docs/plans/2026-01-29-chunk-status-design.md`
+**Parent design:** `docs/designs/04-chunk-status/design.md`
 
 **Phases:**
 - **Phase 3.5.1 — Foundation** (this file): Schema, embedding client, config

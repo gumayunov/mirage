@@ -7,6 +7,7 @@
 > **Status:** Experimental, work-in-progress. APIs and architecture may change.
 >
 > Development powered by:
+>
 > - [z.ai GLM-5](https://z.ai/)
 > - [Claude Code](https://claude.ai/code)
 > - [Crush](https://crush.dev/)
@@ -28,19 +29,20 @@ Local RAG system for books and documentation. Supports PDF, EPUB, and Markdown f
 
 miRAGe supports three embedding models with different strengths:
 
-| Model | Dimensions | Context | Languages | Speed | Quality |
-|-------|------------|---------|-----------|-------|---------|
-| `nomic-embed-text` | 768 | 8192 | EN (best), others | Fast | Good |
-| `bge-m3` | 1024 | 8192 | Multilingual (excellent) | Medium | Excellent |
-| `mxbai-embed-large` | 1024 | 512 | EN (best), others | Fast | Excellent (short) |
+| Model               | Dimensions | Context | Languages                | Speed  | Quality           |
+| ------------------- | ---------- | ------- | ------------------------ | ------ | ----------------- |
+| `nomic-embed-text`  | 768        | 8192    | EN (best), others        | Fast   | Good              |
+| `bge-m3`            | 1024       | 8192    | Multilingual (excellent) | Medium | Excellent         |
+| `mxbai-embed-large` | 1024       | 512     | EN (best), others        | Fast   | Excellent (short) |
 
 **Recommendations:**
+
 - **English documentation:** `bge-m3` + `nomic-embed-text`
 - **Multilingual (RU/EN):** `bge-m3` only
 - **High-volume indexing:** `nomic-embed-text` only
 - **Quality comparison:** use all three models (default)
 
-See [docs/supported_models.md](docs/supported_models.md) for detailed comparison.
+See [docs/reference/supported-models.md](docs/reference/supported-models.md) for detailed comparison.
 
 ## Quick Start
 
@@ -162,7 +164,7 @@ mirage documents --help
 
 ## End-to-End Test
 
-A sample book (*The Art of War* by Sun Tzu, public domain) is included in `samples/`.
+A sample book (_The Art of War_ by Sun Tzu, public domain) is included in `samples/`.
 
 The script `scripts/first-test.sh` creates a project, uploads the sample document, and checks its status:
 
@@ -196,36 +198,36 @@ Run it:
 
 ## API Usage
 
-For raw HTTP API examples (curl), see [docs/raw-api.md](docs/raw-api.md).
+For raw HTTP API examples (curl), see [docs/reference/raw-api.md](docs/reference/raw-api.md).
 
 ## Development Commands
 
-| Command | Description |
-|---------|-------------|
-| `make dev` | Start all services (DB, Ollama, API, Indexer) |
-| `make dev-stop` | Stop all services |
-| `make dev-logs` | Show service logs |
-| `make dev-build` | Rebuild Docker images |
-| `make test` | Run tests locally |
-| `make setup` | Install Python dependencies (for local testing) |
-| `make ollama-pull` | Download embedding model |
-| `make db-shell` | Open PostgreSQL shell |
-| `make clean` | Stop services and remove volumes |
+| Command            | Description                                     |
+| ------------------ | ----------------------------------------------- |
+| `make dev`         | Start all services (DB, Ollama, API, Indexer)   |
+| `make dev-stop`    | Stop all services                               |
+| `make dev-logs`    | Show service logs                               |
+| `make dev-build`   | Rebuild Docker images                           |
+| `make test`        | Run tests locally                               |
+| `make setup`       | Install Python dependencies (for local testing) |
+| `make ollama-pull` | Download embedding model                        |
+| `make db-shell`    | Open PostgreSQL shell                           |
+| `make clean`       | Stop services and remove volumes                |
 
 ## Configuration
 
 Environment variables (set in docker-compose.yml):
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MIRAGE_DATABASE_URL` | - | PostgreSQL connection string |
-| `MIRAGE_API_KEY` | - | API authentication key |
-| `MIRAGE_OLLAMA_URL` | `http://ollama:11434` | Default Ollama server URL |
-| `MIRAGE_CHUNK_SIZE` | `3000` | Parent chunk size (chars) |
-| `MIRAGE_CHUNK_OVERLAP` | `200` | Parent chunk overlap |
-| `MIRAGE_CHILD_CHUNK_SIZE` | `500` | Child chunk size |
-| `MIRAGE_CHILD_CHUNK_OVERLAP` | `50` | Child chunk overlap |
-| `MIRAGE_DOCUMENTS_PATH` | `/data/documents` | Document storage path |
+| Variable                     | Default               | Description                  |
+| ---------------------------- | --------------------- | ---------------------------- |
+| `MIRAGE_DATABASE_URL`        | -                     | PostgreSQL connection string |
+| `MIRAGE_API_KEY`             | -                     | API authentication key       |
+| `MIRAGE_OLLAMA_URL`          | `http://ollama:11434` | Default Ollama server URL    |
+| `MIRAGE_CHUNK_SIZE`          | `3000`                | Parent chunk size (chars)    |
+| `MIRAGE_CHUNK_OVERLAP`       | `200`                 | Parent chunk overlap         |
+| `MIRAGE_CHILD_CHUNK_SIZE`    | `500`                 | Child chunk size             |
+| `MIRAGE_CHILD_CHUNK_OVERLAP` | `50`                  | Child chunk overlap          |
+| `MIRAGE_DOCUMENTS_PATH`      | `/data/documents`     | Document storage path        |
 
 **Embedding models** are configured per-project via API/CLI (`--model` flag), not via environment variables. Each project can use multiple models simultaneously and can override the default Ollama URL.
 
@@ -270,6 +272,7 @@ Environment variables (set in docker-compose.yml):
 ```
 
 **Components:**
+
 - **API** — FastAPI, document CRUD, search, authentication
 - **Indexer** — ChunkWorker, MultiModelEmbeddingWorker, StatusWorker (all run concurrently)
 - **PostgreSQL + pgvector** — metadata and vector storage
@@ -277,6 +280,7 @@ Environment variables (set in docker-compose.yml):
 - **PV** — original file storage
 
 **Database Schema (multi-model):**
+
 - `chunks` — text chunks without embeddings (separate storage)
 - `embeddings_nomic_768` — 768-dimension vectors
 - `embeddings_bge_m3_1024` — 1024-dimension vectors
@@ -369,6 +373,7 @@ erDiagram
 ```
 
 **Data flows:**
+
 - **Add document:** CLI → API → file to PV → ChunkWorker parses → creates parent + child chunks → embedding_status rows per model → MultiModelEmbeddingWorker embeds child chunks → StatusWorker marks ready
 - **Search:** CLI → API → query embedding with all enabled models (parallel) → vector search child chunks → fetch parent content → deduplicate by chunk_id → ranked results
 
@@ -377,25 +382,30 @@ erDiagram
 miRAGe supports using multiple embedding models simultaneously:
 
 **Per-Project Configuration:**
+
 - Each project specifies which models to use via `--model` flag
 - Default: all three models enabled
 - Custom Ollama URL per project (for distributed deployments)
 
 **Database Storage:**
+
 - Separate embeddings tables per model (`embeddings_nomic_768`, `embeddings_bge_m3_1024`, `embeddings_mxbai_1024`)
 - `embedding_status` table tracks progress per chunk per model
 - `project_models` table stores project-level model configuration
 
 **Indexing:**
+
 - All enabled models index documents in parallel
 - StatusWorker marks chunk ready only when all models have embeddings
 
 **Search:**
+
 - Queries all enabled models in parallel
 - Results deduplicated by chunk_id (keeps minimum distance)
 - Can filter by specific models with `--model` flag
 
 **Search Algorithm:**
+
 1. Get enabled models for the project
 2. Embed the query with each enabled model (parallel requests)
 3. For each model: execute vector search on corresponding `embeddings_{model}` table to find top-k matches
@@ -407,11 +417,13 @@ miRAGe supports using multiple embedding models simultaneously:
 9. Return ranked results with metadata
 
 **Why keep minimum distance?**
+
 - Same chunk may rank differently across models
 - Minimum distance = highest similarity = best match
 - Ensures quality regardless of which model found it
 
 **Benefits:**
+
 - Compare search quality across models
 - Use model-specific strengths (multilingual vs fast vs accurate)
 - Future A/B testing capabilities
@@ -421,21 +433,25 @@ miRAGe supports using multiple embedding models simultaneously:
 miRAGe uses a two-level chunking strategy for better retrieval quality:
 
 **Parent Chunks (3000 chars):**
+
 - Large context windows preserving document structure
 - Not embedded directly (storage optimization)
 - Provide full context for search results
 
 **Child Chunks (500 chars):**
+
 - Small, focused chunks for semantic search
 - Embedded and indexed in vector tables
 - Link to parent chunk via `parent_id`
 
 **Search Flow:**
+
 1. Query embedded → search child chunks → retrieve closest matches
 2. For each result → fetch parent content via `parent_id`
 3. Return child chunk with parent context for better comprehension
 
 **Benefits:**
+
 - Precise semantic search (small chunks)
 - Rich context in results (large parents)
 - Reduced embedding computation (only child chunks embedded)

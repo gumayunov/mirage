@@ -37,6 +37,30 @@ src/mirage/
 └── indexer/      # Document parsers, chunking, worker
 ```
 
+## Documentation Layout
+
+```
+docs/
+├── design.md         # Top-level project design / overview
+├── designs/          # Feature-level designs, one numbered subdir per feature
+│                     # (e.g. 04-chunk-status/design.md)
+├── plans/            # Implementation plans and progress tracking
+├── reference/        # Usage/reference docs (API, supported models, …)
+├── researches/       # Research notes and comparisons (no commitment to build)
+└── testplans/        # Test plans (approach TBD)
+```
+
+Rules:
+- **Designs** describe *what and why*. Place new feature designs in a numbered
+  subdirectory under `docs/designs/` (continue the existing numbering).
+- **Plans** describe *how and in what order*. Live in `docs/plans/`, tracked
+  via `docs/plans/progress.md`.
+- **Research** is exploratory; goes to `docs/researches/`. Not a commitment.
+- **Reference** is user-facing how-to / lookup material. Goes to
+  `docs/reference/`.
+- Do not put feature designs, research, or reference docs in the `docs/` root.
+  Only top-level cross-cutting docs (like `design.md`) belong there.
+
 ## Implementation Plans
 
 Plans are in `docs/plans/`:

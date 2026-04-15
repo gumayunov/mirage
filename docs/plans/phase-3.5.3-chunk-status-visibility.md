@@ -4,7 +4,7 @@
 
 **Goal:** Expose chunk progress in API responses and CLI output. Run a final regression-fix pass over the full test suite.
 
-**Parent design:** `docs/plans/2026-01-29-chunk-status-design.md`
+**Parent design:** `docs/designs/04-chunk-status/design.md`
 
 **Phases:**
 - **Phase 3.5.1 — Foundation:** Schema, embedding client, config

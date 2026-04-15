@@ -38,7 +38,7 @@ The original idea of using CozoDB was explored but rejected due to migration com
 ### Key Design Decisions
 
 1. **Separate embeddings tables** — one table per model with fixed dimension
-2. **Predefined model set** — 3 models hardcoded in the service (see `docs/supported_models.md`)
+2. **Predefined model set** — 3 models hardcoded in the service (see `docs/reference/supported-models.md`)
 3. **Project-level model selection** — each project specifies which models to use
 4. **Default: all models** — if not specified, project uses all available models
 5. **Parallel indexing** — all enabled models index simultaneously
@@ -229,11 +229,11 @@ ollama_url: http://ollama:11434
 
 ### Supported Models
 
-See `docs/supported_models.md` for the list of supported models with their characteristics.
+See `docs/reference/supported-models.md` for the list of supported models with their characteristics.
 
 ### Implementation Steps
 
-1. [ ] Create `docs/supported_models.md` with model descriptions
+1. [ ] Create `docs/reference/supported-models.md` with model descriptions
 2. [ ] Update database schema (`src/mirage/shared/db.py`)
 3. [ ] Create Alembic migration for new tables
 4. [ ] Update `ProjectTable` with `ollama_url`
